@@ -32,21 +32,21 @@ public class ContractReminderScheduler {
                .ge(MaintenanceContract::getEndDate, LocalDate.now());
 
         List<MaintenanceContract> contracts = contractMapper.selectList(wrapper);
-        
+
         for (MaintenanceContract contract : contracts) {
             String key = "contract:reminder:" + contract.getId();
             if (Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
                 continue;
             }
-            
+
             long daysUntilExpiry = LocalDate.now().until(contract.getEndDate()).getDays();
             log.warn("合同即将到期: {}, 剩余 {} 天", contract.getContractName(), daysUntilExpiry);
-            
+
             if (daysUntilExpiry <= 7) {
                 contract.setStatus(2);
                 contractMapper.updateById(contract);
             }
-            
+
             redisTemplate.opsForValue().set(key, daysUntilExpiry, 1, TimeUnit.DAYS);
         }
 
@@ -70,19 +70,5 @@ public class ContractReminderScheduler {
         }
 
         log.info("过期合同检查完成，标记 {} 个已过期合同", contracts.size());
-    }
-
-    @Scheduled(cron = "0 30 8 * * ?")
-    public void checkHighRiskDevices() {
-        log.info("开始检查高风险设备状态");
-
-        String key = "device:high_risk:count";
-        Long count = (Long) redisTemplate.opsForValue().get(key);
-        
-        if (count == null || count == 0) {
-            log.info("当前无高风险设备需要特别关注");
-        } else {
-            log.warn("当前有 {} 台高风险设备，请重点关注！", count);
-        }
     }
 }

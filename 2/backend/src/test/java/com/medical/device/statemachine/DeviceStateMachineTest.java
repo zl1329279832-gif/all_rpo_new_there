@@ -1,6 +1,5 @@
 package com.medical.device.statemachine;
 
-import com.medical.device.enums.DeviceStatus;
 import com.medical.device.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,54 +17,36 @@ class DeviceStateMachineTest {
 
     @Test
     void testNormalToMaintenance() {
-        DeviceStatus result = stateMachine.transition(DeviceStatus.NORMAL, DeviceStatus.IN_MAINTENANCE, 1);
-        assertEquals(DeviceStatus.IN_MAINTENANCE, result);
+        assertDoesNotThrow(() -> stateMachine.transition(1, 2, 1));
     }
 
     @Test
     void testNormalToRepair() {
-        DeviceStatus result = stateMachine.transition(DeviceStatus.NORMAL, DeviceStatus.IN_REPAIR, 1);
-        assertEquals(DeviceStatus.IN_REPAIR, result);
+        assertDoesNotThrow(() -> stateMachine.transition(1, 3, 1));
     }
 
     @Test
     void testRepairToNormal() {
-        DeviceStatus result = stateMachine.transition(DeviceStatus.IN_REPAIR, DeviceStatus.NORMAL, 1);
-        assertEquals(DeviceStatus.NORMAL, result);
+        assertDoesNotThrow(() -> stateMachine.transition(3, 1, 1));
     }
 
     @Test
     void testQcFailedCannotGoToNormal() {
         assertThrows(BusinessException.class, () -> {
-            stateMachine.transition(DeviceStatus.IN_REPAIR, DeviceStatus.NORMAL, 2);
+            stateMachine.transition(3, 1, 2);
         });
     }
 
     @Test
     void testInvalidTransition() {
         assertThrows(BusinessException.class, () -> {
-            stateMachine.transition(DeviceStatus.SCRAPPED, DeviceStatus.NORMAL, 1);
+            stateMachine.transition(4, 1, 1);
         });
     }
 
     @Test
     void testCanTransition() {
-        assertTrue(stateMachine.canTransition(DeviceStatus.NORMAL, DeviceStatus.IN_REPAIR));
-        assertFalse(stateMachine.canTransition(DeviceStatus.SCRAPPED, DeviceStatus.NORMAL));
-    }
-
-    @Test
-    void testStartRepair() {
-        assertEquals(DeviceStatus.IN_REPAIR, stateMachine.startRepair(DeviceStatus.NORMAL));
-    }
-
-    @Test
-    void testCompleteRepair() {
-        assertEquals(DeviceStatus.NORMAL, stateMachine.completeRepair(DeviceStatus.IN_REPAIR, 1));
-    }
-
-    @Test
-    void testScrap() {
-        assertEquals(DeviceStatus.SCRAPPED, stateMachine.scrap(DeviceStatus.NORMAL));
+        assertTrue(stateMachine.canTransition(1, 3));
+        assertFalse(stateMachine.canTransition(4, 1));
     }
 }

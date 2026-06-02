@@ -8,7 +8,6 @@ import com.medical.device.entity.Device;
 import com.medical.device.entity.DowntimeRecord;
 import com.medical.device.entity.PartReplacement;
 import com.medical.device.entity.RepairOrder;
-import com.medical.device.enums.DeviceStatus;
 import com.medical.device.exception.BusinessException;
 import com.medical.device.mapper.DeviceMapper;
 import com.medical.device.mapper.DowntimeRecordMapper;
@@ -35,11 +34,11 @@ public class RepairOrderService {
     private final DowntimeRecordMapper downtimeRecordMapper;
     private final DeviceStateMachine deviceStateMachine;
 
-    public PageResult<RepairOrder> listOrders(int pageNum, int pageSize, String keyword, 
+    public PageResult<RepairOrder> listOrders(int pageNum, int pageSize, String keyword,
                                               Integer status, Integer faultLevel, Long deviceId) {
         Page<RepairOrder> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<RepairOrder> wrapper = new LambdaQueryWrapper<>();
-        
+
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(RepairOrder::getOrderCode, keyword)
                     .or().like(RepairOrder::getFaultDescription, keyword));
@@ -53,15 +52,15 @@ public class RepairOrderService {
         if (deviceId != null) {
             wrapper.eq(RepairOrder::getDeviceId, deviceId);
         }
-        
+
         wrapper.orderByDesc(RepairOrder::getId);
         IPage<RepairOrder> result = repairOrderMapper.selectPage(page, wrapper);
-        
+
         return PageResult.of(result.getRecords(), result.getTotal(), pageNum, pageSize);
     }
 
     public RepairOrder getOrder(Long id) {
-        RepairOrder order = repairOrderMapper.selectWithDevice(id);
+        RepairOrder order = repairOrderMapper.selectById(id);
         if (order == null) {
             throw new BusinessException("工单不存在");
         }
@@ -80,9 +79,8 @@ public class RepairOrderService {
         order.setStatus(1);
         repairOrderMapper.insert(order);
 
-        DeviceStatus currentStatus = DeviceStatus.fromCode(device.getStatus());
-        DeviceStatus newStatus = deviceStateMachine.startRepair(currentStatus);
-        device.setStatus(newStatus.getCode());
+        deviceStateMachine.transition(device.getStatus(), 3, null);
+        device.setStatus(3);
         deviceMapper.updateById(device);
 
         DowntimeRecord downtime = new DowntimeRecord();
@@ -129,7 +127,7 @@ public class RepairOrderService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void completeRepair(Long id, String repairContent, Integer repairResult, 
+    public void completeRepair(Long id, String repairContent, String repairResult,
                                List<PartReplacement> parts) {
         RepairOrder order = repairOrderMapper.selectById(id);
         if (order == null) {
@@ -144,9 +142,11 @@ public class RepairOrderService {
         order.setRepairResult(repairResult);
         order.setStatus(4);
 
-        Duration duration = Duration.between(order.getStartTime(), order.getCompleteTime());
-        int downtime = (int) Math.ceil(duration.toMinutes() / 60.0);
-        order.setDowntime(downtime);
+        if (order.getStartTime() != null && order.getCompleteTime() != null) {
+            Duration duration = Duration.between(order.getStartTime(), order.getCompleteTime());
+            int downtimeHours = (int) Math.ceil(duration.toMinutes() / 60.0);
+            order.setDowntime(downtimeHours);
+        }
 
         repairOrderMapper.updateById(order);
 
@@ -159,11 +159,14 @@ public class RepairOrderService {
 
         LambdaQueryWrapper<DowntimeRecord> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DowntimeRecord::getRepairOrderId, id);
-        DowntimeRecord downtime = downtimeRecordMapper.selectOne(wrapper);
-        if (downtime != null) {
-            downtime.setEndTime(LocalDateTime.now());
-            downtime.setDuration(downtime);
-            downtimeRecordMapper.updateById(downtime);
+        DowntimeRecord downtimeRecord = downtimeRecordMapper.selectOne(wrapper);
+        if (downtimeRecord != null) {
+            downtimeRecord.setEndTime(LocalDateTime.now());
+            if (downtimeRecord.getStartTime() != null && downtimeRecord.getEndTime() != null) {
+                Duration dur = Duration.between(downtimeRecord.getStartTime(), downtimeRecord.getEndTime());
+                downtimeRecord.setDuration((int) Math.ceil(dur.toMinutes() / 60.0));
+            }
+            downtimeRecordMapper.updateById(downtimeRecord);
         }
     }
 
@@ -181,11 +184,18 @@ public class RepairOrderService {
         repairOrderMapper.updateById(order);
 
         Device device = deviceMapper.selectById(order.getDeviceId());
-        DeviceStatus currentStatus = DeviceStatus.fromCode(device.getStatus());
-        DeviceStatus newStatus = deviceStateMachine.completeRepair(currentStatus, qcStatus);
-        device.setStatus(newStatus.getCode());
-        device.setTotalDowntime(device.getTotalDowntime() + order.getDowntime());
-        deviceMapper.updateById(device);
+        if (device != null) {
+            Integer currentStatus = device.getStatus();
+            Integer targetStatus = 1;
+            deviceStateMachine.transition(currentStatus, targetStatus, qcStatus);
+            device.setStatus(targetStatus);
+            if (order.getDowntime() != null) {
+                device.setTotalDowntime(
+                    (device.getTotalDowntime() != null ? device.getTotalDowntime() : 0) + order.getDowntime()
+                );
+            }
+            deviceMapper.updateById(device);
+        }
     }
 
     public Map<String, Object> getStatistics() {
@@ -197,7 +207,7 @@ public class RepairOrderService {
     }
 
     private String generateOrderCode() {
-        return "RO-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + 
+        return "RO-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" +
                String.format("%04d", System.currentTimeMillis() % 10000);
     }
 }

@@ -39,7 +39,7 @@ public class InspectionController {
     @Operation(summary = "创建巡检计划")
     @PostMapping("/plans")
     @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN')")
-    public Result<Void> createPlan(@RequestBody InspectionPlan plan) {
+    public Result<String> createPlan(@RequestBody InspectionPlan plan) {
         inspectionService.createPlan(plan);
         return Result.success("计划创建成功");
     }
@@ -47,7 +47,7 @@ public class InspectionController {
     @Operation(summary = "更新巡检计划")
     @PutMapping("/plans/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN')")
-    public Result<Void> updatePlan(@PathVariable Long id, @RequestBody InspectionPlan plan) {
+    public Result<String> updatePlan(@PathVariable Long id, @RequestBody InspectionPlan plan) {
         plan.setId(id);
         inspectionService.updatePlan(plan);
         return Result.success("计划更新成功");
@@ -78,7 +78,7 @@ public class InspectionController {
 
     @Operation(summary = "执行巡检任务")
     @PutMapping("/tasks/{id}/execute")
-    public Result<Void> executeTask(@PathVariable Long id,
+    public Result<String> executeTask(@PathVariable Long id,
                                     @RequestParam Integer checkResult,
                                     @RequestParam(required = false) String abnormalDesc,
                                     @RequestParam(required = false) String handleSuggestion,

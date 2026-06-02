@@ -39,7 +39,7 @@ public class DepartmentController {
     @Operation(summary = "创建科室")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public Result<Void> createDepartment(@RequestBody Department department) {
+    public Result<String> createDepartment(@RequestBody Department department) {
         departmentMapper.insert(department);
         return Result.success("科室创建成功");
     }
@@ -47,7 +47,7 @@ public class DepartmentController {
     @Operation(summary = "更新科室")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public Result<Void> updateDepartment(@PathVariable Long id, @RequestBody Department department) {
+    public Result<String> updateDepartment(@PathVariable Long id, @RequestBody Department department) {
         department.setId(id);
         departmentMapper.updateById(department);
         return Result.success("科室更新成功");
@@ -56,7 +56,7 @@ public class DepartmentController {
     @Operation(summary = "删除科室")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public Result<Void> deleteDepartment(@PathVariable Long id) {
+    public Result<String> deleteDepartment(@PathVariable Long id) {
         departmentMapper.deleteById(id);
         return Result.success("科室删除成功");
     }

@@ -1,16 +1,10 @@
 package com.medical.device.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.medical.device.enums.DeviceStatus;
-import com.medical.device.enums.RiskLevel;
 import lombok.Data;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * 设备实体类
- */
 @Data
 @TableName("device")
 public class Device {
@@ -18,59 +12,44 @@ public class Device {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("device_code")
-    private String deviceCode;
-
     @TableField("device_name")
     private String deviceName;
+
+    @TableField("device_code")
+    private String deviceCode;
 
     @TableField("device_type")
     private String deviceType;
 
-    @TableField("model")
-    private String model;
-
-    @TableField("brand")
-    private String brand;
-
-    @TableField("specification")
-    private String specification;
-
-    @TableField("serial_number")
-    private String serialNumber;
+    @TableField("device_model")
+    private String deviceModel;
 
     @TableField("manufacturer")
     private String manufacturer;
 
+    @TableField("serial_number")
+    private String serialNumber;
+
     @TableField("purchase_date")
     private LocalDate purchaseDate;
 
-    @TableField("purchase_price")
-    private BigDecimal purchasePrice;
+    @TableField("warranty_start")
+    private LocalDate warrantyStart;
 
-    @TableField("department_id")
-    private Long departmentId;
+    @TableField("warranty_end")
+    private LocalDate warrantyEnd;
+
+    @TableField("dept_id")
+    private Long deptId;
 
     @TableField("location")
     private String location;
 
-    @TableField("responsible_person")
-    private String responsiblePerson;
-
-    @TableField("contact_phone")
-    private String contactPhone;
+    @TableField("status")
+    private Integer status;
 
     @TableField("risk_level")
-    private RiskLevel riskLevel;
-
-    @TableField("status")
-    private DeviceStatus status;
-
-    @TableField("warranty_start_date")
-    private LocalDate warrantyStartDate;
-
-    @TableField("warranty_end_date")
-    private LocalDate warrantyEndDate;
+    private Integer riskLevel;
 
     @TableField("last_maintenance_date")
     private LocalDate lastMaintenanceDate;
@@ -78,14 +57,17 @@ public class Device {
     @TableField("next_maintenance_date")
     private LocalDate nextMaintenanceDate;
 
-    @TableField("last_calibration_date")
-    private LocalDate lastCalibrationDate;
+    @TableField("total_downtime")
+    private Integer totalDowntime;
 
-    @TableField("next_calibration_date")
-    private LocalDate nextCalibrationDate;
+    @TableField("maintainer")
+    private String maintainer;
 
-    @TableField("remark")
-    private String remark;
+    @TableField("description")
+    private String description;
+
+    @TableField("qc_status")
+    private Integer qcStatus;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

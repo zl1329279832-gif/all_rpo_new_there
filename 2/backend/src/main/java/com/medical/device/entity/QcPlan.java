@@ -5,9 +5,6 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * 质检计划实体类
- */
 @Data
 @TableName("qc_plan")
 public class QcPlan {
@@ -15,44 +12,32 @@ public class QcPlan {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("plan_code")
-    private String planCode;
-
     @TableField("plan_name")
     private String planName;
-
-    @TableField("plan_type")
-    private Integer planType;
 
     @TableField("device_id")
     private Long deviceId;
 
-    @TableField("department_id")
-    private Long departmentId;
+    @TableField("qc_type")
+    private Integer qcType;
 
     @TableField("cycle_type")
     private Integer cycleType;
 
-    @TableField("cycle_value")
-    private Integer cycleValue;
-
     @TableField("start_date")
     private LocalDate startDate;
 
-    @TableField("end_date")
-    private LocalDate endDate;
-
-    @TableField("qc_person_id")
-    private Long qcPersonId;
-
-    @TableField("qc_items")
-    private String qcItems;
+    @TableField("next_execution_date")
+    private LocalDate nextExecutionDate;
 
     @TableField("qc_standard")
     private String qcStandard;
 
-    @TableField("remark")
-    private String remark;
+    @TableField("qc_items")
+    private String qcItems;
+
+    @TableField("executor")
+    private String executor;
 
     @TableField("status")
     private Integer status;

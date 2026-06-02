@@ -31,9 +31,7 @@ public class InspectionTaskScheduler {
         LocalDate today = LocalDate.now();
         LambdaQueryWrapper<InspectionPlan> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(InspectionPlan::getStatus, 1)
-               .le(InspectionPlan::getNextExecutionDate, today)
-               .or(q -> q.isNull(InspectionPlan::getEndDate))
-               .or(q -> q.ge(InspectionPlan::getEndDate, today));
+               .le(InspectionPlan::getNextExecutionDate, today);
 
         List<InspectionPlan> plans = inspectionPlanMapper.selectList(wrapper);
 
@@ -49,7 +47,7 @@ public class InspectionTaskScheduler {
         LambdaQueryWrapper<InspectionTask> checkWrapper = new LambdaQueryWrapper<>();
         checkWrapper.eq(InspectionTask::getPlanId, plan.getId())
                     .eq(InspectionTask::getPlanDate, planDate);
-        
+
         Long count = inspectionTaskMapper.selectCount(checkWrapper);
         if (count > 0) {
             log.warn("计划ID {} 的今日任务已存在，跳过", plan.getId());
@@ -63,9 +61,7 @@ public class InspectionTaskScheduler {
         task.setTaskName(plan.getPlanName() + "-" + planDate.format(DateTimeFormatter.ofPattern("MMdd")));
         task.setTaskType(1);
         task.setPlanDate(planDate);
-        task.setInspector(plan.getInspector());
         task.setStatus(1);
-        task.setCheckItems(plan.getCheckItems());
 
         inspectionTaskMapper.insert(task);
         log.info("已创建巡检任务: {}", task.getTaskName());
@@ -78,9 +74,9 @@ public class InspectionTaskScheduler {
     }
 
     private LocalDate calculateNextExecutionDate(InspectionPlan plan) {
-        LocalDate current = plan.getNextExecutionDate() != null ? 
+        LocalDate current = plan.getNextExecutionDate() != null ?
             plan.getNextExecutionDate() : plan.getStartDate();
-        
+
         return switch (plan.getCycleType()) {
             case 1 -> current.plusDays(1);
             case 2 -> current.plusWeeks(1);
@@ -92,7 +88,7 @@ public class InspectionTaskScheduler {
     }
 
     private String generateTaskCode(LocalDate date) {
-        return "IT-" + date.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + 
+        return "IT-" + date.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" +
                String.format("%04d", System.currentTimeMillis() % 10000);
     }
 

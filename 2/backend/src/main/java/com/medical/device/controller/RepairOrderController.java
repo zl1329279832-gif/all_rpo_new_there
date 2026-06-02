@@ -46,13 +46,13 @@ public class RepairOrderController {
     @PostMapping
     public Result<RepairOrder> createOrder(@RequestBody RepairOrder order) {
         RepairOrder created = repairOrderService.createOrder(order);
-        return Result.success("工单创建成功", created);
+        return Result.success(created);
     }
 
     @Operation(summary = "派单")
     @PutMapping("/{id}/assign")
     @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN')")
-    public Result<Void> assignOrder(@PathVariable Long id,
+    public Result<String> assignOrder(@PathVariable Long id,
                                     @RequestParam Long repairerId,
                                     @RequestParam String repairerName) {
         repairOrderService.assignOrder(id, repairerId, repairerName);
@@ -62,7 +62,7 @@ public class RepairOrderController {
     @Operation(summary = "开始维修")
     @PutMapping("/{id}/start")
     @PreAuthorize("hasAnyRole('ADMIN', 'ENGINEER')")
-    public Result<Void> startRepair(@PathVariable Long id) {
+    public Result<String> startRepair(@PathVariable Long id) {
         repairOrderService.startRepair(id);
         return Result.success("开始维修");
     }
@@ -70,9 +70,9 @@ public class RepairOrderController {
     @Operation(summary = "完成维修")
     @PutMapping("/{id}/complete")
     @PreAuthorize("hasAnyRole('ADMIN', 'ENGINEER')")
-    public Result<Void> completeRepair(@PathVariable Long id,
+    public Result<String> completeRepair(@PathVariable Long id,
                                        @RequestParam String repairContent,
-                                       @RequestParam Integer repairResult,
+                                       @RequestParam String repairResult,
                                        @RequestBody(required = false) List<PartReplacement> parts) {
         repairOrderService.completeRepair(id, repairContent, repairResult, parts);
         return Result.success("维修完成");
@@ -81,7 +81,7 @@ public class RepairOrderController {
     @Operation(summary = "验收工单")
     @PutMapping("/{id}/accept")
     @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN')")
-    public Result<Void> acceptOrder(@PathVariable Long id, @RequestParam(required = false) Integer qcStatus) {
+    public Result<String> acceptOrder(@PathVariable Long id, @RequestParam(required = false) Integer qcStatus) {
         repairOrderService.acceptOrder(id, qcStatus);
         return Result.success("验收通过");
     }

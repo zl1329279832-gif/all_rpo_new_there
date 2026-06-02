@@ -28,17 +28,17 @@ public class InspectionService {
     public PageResult<InspectionPlan> listPlans(int pageNum, int pageSize, String keyword, Integer status) {
         Page<InspectionPlan> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<InspectionPlan> wrapper = new LambdaQueryWrapper<>();
-        
+
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.like(InspectionPlan::getPlanName, keyword);
         }
         if (status != null) {
             wrapper.eq(InspectionPlan::getStatus, status);
         }
-        
+
         wrapper.orderByDesc(InspectionPlan::getId);
         IPage<InspectionPlan> result = planMapper.selectPage(page, wrapper);
-        
+
         return PageResult.of(result.getRecords(), result.getTotal(), pageNum, pageSize);
     }
 
@@ -55,11 +55,11 @@ public class InspectionService {
         planMapper.updateById(plan);
     }
 
-    public PageResult<InspectionTask> listTasks(int pageNum, int pageSize, String keyword, 
+    public PageResult<InspectionTask> listTasks(int pageNum, int pageSize, String keyword,
                                                  Integer status, Long deviceId, LocalDate startDate, LocalDate endDate) {
         Page<InspectionTask> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<InspectionTask> wrapper = new LambdaQueryWrapper<>();
-        
+
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(InspectionTask::getTaskName, keyword)
                     .or().like(InspectionTask::getTaskCode, keyword));
@@ -76,10 +76,10 @@ public class InspectionService {
         if (endDate != null) {
             wrapper.le(InspectionTask::getPlanDate, endDate);
         }
-        
+
         wrapper.orderByDesc(InspectionTask::getId);
         IPage<InspectionTask> result = taskMapper.selectPage(page, wrapper);
-        
+
         return PageResult.of(result.getRecords(), result.getTotal(), pageNum, pageSize);
     }
 
@@ -88,13 +88,13 @@ public class InspectionService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void executeTask(Long taskId, Integer checkResult, String abnormalDesc, 
+    public void executeTask(Long taskId, Integer checkResult, String abnormalDesc,
                             String handleSuggestion, Long inspectorId, String inspectorName) {
         InspectionTask task = taskMapper.selectById(taskId);
         if (task == null) {
             throw new BusinessException("任务不存在");
         }
-        if (task.getStatus() == 3 || task.getStatus() == 5) {
+        if (task.getStatus() != null && (task.getStatus() == 3 || task.getStatus() == 5)) {
             throw new BusinessException("该任务已完成或已取消");
         }
 
@@ -105,12 +105,12 @@ public class InspectionService {
         task.setAbnormalDescription(abnormalDesc);
         task.setHandleSuggestion(handleSuggestion);
         task.setStatus(3);
-        
+
         taskMapper.updateById(task);
     }
 
     public InspectionTask getTaskDetail(Long id) {
-        return taskMapper.selectWithDevice(id);
+        return taskMapper.selectById(id);
     }
 
     public Map<String, Object> getStatistics() {

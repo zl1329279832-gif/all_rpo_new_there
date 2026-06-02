@@ -1,13 +1,10 @@
 package com.medical.device.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.medical.device.enums.InspectionTaskStatus;
 import lombok.Data;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * 巡检任务实体类
- */
 @Data
 @TableName("inspection_task")
 public class InspectionTask {
@@ -24,38 +21,35 @@ public class InspectionTask {
     @TableField("device_id")
     private Long deviceId;
 
+    @TableField("task_name")
+    private String taskName;
+
+    @TableField("task_type")
+    private Integer taskType;
+
+    @TableField("plan_date")
+    private LocalDate planDate;
+
+    @TableField("actual_date")
+    private LocalDateTime actualDate;
+
     @TableField("inspector_id")
     private Long inspectorId;
 
-    @TableField("plan_start_time")
-    private LocalDateTime planStartTime;
-
-    @TableField("plan_end_time")
-    private LocalDateTime planEndTime;
-
-    @TableField("actual_start_time")
-    private LocalDateTime actualStartTime;
-
-    @TableField("actual_end_time")
-    private LocalDateTime actualEndTime;
+    @TableField("inspector_name")
+    private String inspectorName;
 
     @TableField("status")
-    private InspectionTaskStatus status;
+    private Integer status;
 
-    @TableField("inspection_result")
-    private String inspectionResult;
+    @TableField("check_result")
+    private Integer checkResult;
 
-    @TableField("inspection_images")
-    private String inspectionImages;
+    @TableField("abnormal_description")
+    private String abnormalDescription;
 
-    @TableField("has_exception")
-    private Integer hasException;
-
-    @TableField("exception_desc")
-    private String exceptionDesc;
-
-    @TableField("remark")
-    private String remark;
+    @TableField("handle_suggestion")
+    private String handleSuggestion;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

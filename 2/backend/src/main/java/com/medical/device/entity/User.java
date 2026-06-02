@@ -4,9 +4,6 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-/**
- * 用户实体类
- */
 @Data
 @TableName("sys_user")
 public class User {
@@ -23,17 +20,14 @@ public class User {
     @TableField("real_name")
     private String realName;
 
-    @TableField("phone")
-    private String phone;
-
     @TableField("email")
     private String email;
 
-    @TableField("department_id")
-    private Long departmentId;
+    @TableField("phone")
+    private String phone;
 
-    @TableField("role_id")
-    private Long roleId;
+    @TableField("dept_id")
+    private Long deptId;
 
     @TableField("status")
     private Integer status;

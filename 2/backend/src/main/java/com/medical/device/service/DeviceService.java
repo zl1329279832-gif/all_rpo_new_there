@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.medical.device.common.PageResult;
 import com.medical.device.entity.Device;
-import com.medical.device.enums.DeviceStatus;
 import com.medical.device.exception.BusinessException;
 import com.medical.device.mapper.DeviceMapper;
 import com.medical.device.statemachine.DeviceStateMachine;
@@ -25,11 +24,11 @@ public class DeviceService {
     private final DeviceStateMachine deviceStateMachine;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    public PageResult<Device> listDevices(int pageNum, int pageSize, String keyword, 
+    public PageResult<Device> listDevices(int pageNum, int pageSize, String keyword,
                                           Integer status, Integer riskLevel, Long deptId) {
         Page<Device> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<Device> wrapper = new LambdaQueryWrapper<>();
-        
+
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(Device::getDeviceName, keyword)
                     .or().like(Device::getDeviceCode, keyword)
@@ -44,15 +43,15 @@ public class DeviceService {
         if (deptId != null) {
             wrapper.eq(Device::getDeptId, deptId);
         }
-        
+
         wrapper.orderByDesc(Device::getId);
         IPage<Device> result = deviceMapper.selectPage(page, wrapper);
-        
+
         return PageResult.of(result.getRecords(), result.getTotal(), pageNum, pageSize);
     }
 
     public Device getDevice(Long id) {
-        Device device = deviceMapper.selectDeviceWithDept(id);
+        Device device = deviceMapper.selectById(id);
         if (device == null) {
             throw new BusinessException("设备不存在");
         }
@@ -77,13 +76,11 @@ public class DeviceService {
         if (existing == null) {
             throw new BusinessException("设备不存在");
         }
-        
+
         if (device.getStatus() != null && !device.getStatus().equals(existing.getStatus())) {
-            DeviceStatus currentStatus = DeviceStatus.fromCode(existing.getStatus());
-            DeviceStatus targetStatus = DeviceStatus.fromCode(device.getStatus());
-            deviceStateMachine.transition(currentStatus, targetStatus, existing.getQcStatus());
+            deviceStateMachine.transition(existing.getStatus(), device.getStatus(), existing.getQcStatus());
         }
-        
+
         deviceMapper.updateById(device);
         updateHighRiskCache();
     }
@@ -104,13 +101,13 @@ public class DeviceService {
         if (device == null) {
             throw new BusinessException("设备不存在");
         }
-        
-        device.setQcStatus(qcStatus);
-        deviceMapper.updateById(device);
-        
+
         if (qcStatus == 2 && device.getStatus() == 1) {
             throw new BusinessException("质控不合格，设备将不能标记为正常使用状态");
         }
+
+        device.setQcStatus(qcStatus);
+        deviceMapper.updateById(device);
     }
 
     public List<Device> getHighRiskDevices() {

@@ -6,9 +6,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * 校准记录实体类
- */
 @Data
 @TableName("calibration_record")
 public class CalibrationRecord {
@@ -16,14 +13,11 @@ public class CalibrationRecord {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("record_code")
-    private String recordCode;
-
     @TableField("device_id")
     private Long deviceId;
 
     @TableField("calibration_type")
-    private Integer calibrationType;
+    private String calibrationType;
 
     @TableField("calibration_date")
     private LocalDate calibrationDate;
@@ -31,32 +25,29 @@ public class CalibrationRecord {
     @TableField("calibration_agency")
     private String calibrationAgency;
 
-    @TableField("calibrator")
-    private String calibrator;
-
-    @TableField("calibration_items")
-    private String calibrationItems;
-
-    @TableField("calibration_standard")
-    private String calibrationStandard;
-
-    @TableField("calibration_result")
-    private Integer calibrationResult;
+    @TableField("calibration_person")
+    private String calibrationPerson;
 
     @TableField("certificate_number")
     private String certificateNumber;
 
-    @TableField("validity_date")
-    private LocalDate validityDate;
+    @TableField("valid_until")
+    private LocalDate validUntil;
+
+    @TableField("calibration_result")
+    private Integer calibrationResult;
+
+    @TableField("calibration_items")
+    private String calibrationItems;
+
+    @TableField("deviation_value")
+    private BigDecimal deviationValue;
+
+    @TableField("description")
+    private String description;
 
     @TableField("next_calibration_date")
     private LocalDate nextCalibrationDate;
-
-    @TableField("calibration_cost")
-    private BigDecimal calibrationCost;
-
-    @TableField("remark")
-    private String remark;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

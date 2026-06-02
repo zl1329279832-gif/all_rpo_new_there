@@ -5,9 +5,6 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * 配件更换记录实体类
- */
 @Data
 @TableName("part_replacement")
 public class PartReplacement {
@@ -18,20 +15,14 @@ public class PartReplacement {
     @TableField("repair_order_id")
     private Long repairOrderId;
 
-    @TableField("part_id")
-    private Long partId;
-
-    @TableField("part_code")
-    private String partCode;
+    @TableField("spare_part_id")
+    private Long sparePartId;
 
     @TableField("part_name")
     private String partName;
 
-    @TableField("model")
-    private String model;
-
-    @TableField("brand")
-    private String brand;
+    @TableField("part_model")
+    private String partModel;
 
     @TableField("quantity")
     private Integer quantity;
@@ -42,26 +33,17 @@ public class PartReplacement {
     @TableField("total_price")
     private BigDecimal totalPrice;
 
-    @TableField("replacement_reason")
-    private String replacementReason;
+    @TableField("replace_time")
+    private LocalDateTime replaceTime;
 
-    @TableField("operator_id")
-    private Long operatorId;
-
-    @TableField("operator_name")
-    private String operatorName;
-
-    @TableField("replacement_time")
-    private LocalDateTime replacementTime;
+    @TableField("operator")
+    private String operator;
 
     @TableField("remark")
     private String remark;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
-
-    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
 
     @TableField("deleted")
     @TableLogic

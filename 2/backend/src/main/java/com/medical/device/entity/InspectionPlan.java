@@ -5,9 +5,6 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * 巡检计划实体类
- */
 @Data
 @TableName("inspection_plan")
 public class InspectionPlan {
@@ -15,26 +12,17 @@ public class InspectionPlan {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("plan_code")
-    private String planCode;
-
     @TableField("plan_name")
     private String planName;
-
-    @TableField("plan_type")
-    private Integer planType;
 
     @TableField("device_id")
     private Long deviceId;
 
-    @TableField("department_id")
-    private Long departmentId;
-
     @TableField("cycle_type")
     private Integer cycleType;
 
-    @TableField("cycle_value")
-    private Integer cycleValue;
+    @TableField("cycle_days")
+    private Integer cycleDays;
 
     @TableField("start_date")
     private LocalDate startDate;
@@ -42,17 +30,20 @@ public class InspectionPlan {
     @TableField("end_date")
     private LocalDate endDate;
 
-    @TableField("inspector_id")
-    private Long inspectorId;
+    @TableField("next_execution_date")
+    private LocalDate nextExecutionDate;
 
-    @TableField("inspection_items")
-    private String inspectionItems;
+    @TableField("inspector")
+    private String inspector;
 
-    @TableField("remark")
-    private String remark;
+    @TableField("check_items")
+    private String checkItems;
 
     @TableField("status")
     private Integer status;
+
+    @TableField("description")
+    private String description;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

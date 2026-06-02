@@ -4,9 +4,6 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-/**
- * 角色实体类
- */
 @Data
 @TableName("sys_role")
 public class Role {
@@ -22,9 +19,6 @@ public class Role {
 
     @TableField("description")
     private String description;
-
-    @TableField("status")
-    private Integer status;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

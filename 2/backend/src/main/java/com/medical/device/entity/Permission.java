@@ -4,9 +4,6 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-/**
- * 权限实体类
- */
 @Data
 @TableName("sys_permission")
 public class Permission {
@@ -20,26 +17,23 @@ public class Permission {
     @TableField("permission_code")
     private String permissionCode;
 
-    @TableField("permission_type")
-    private Integer permissionType;
+    @TableField("type")
+    private Integer type;
 
     @TableField("parent_id")
     private Long parentId;
 
-    @TableField("sort")
-    private Integer sort;
-
     @TableField("path")
     private String path;
-
-    @TableField("icon")
-    private String icon;
 
     @TableField("component")
     private String component;
 
-    @TableField("status")
-    private Integer status;
+    @TableField("icon")
+    private String icon;
+
+    @TableField("sort_order")
+    private Integer sortOrder;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

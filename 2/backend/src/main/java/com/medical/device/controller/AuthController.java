@@ -30,7 +30,7 @@ public class AuthController {
 
     @Operation(summary = "用户登出")
     @PostMapping("/logout")
-    public Result<Void> logout(HttpServletRequest request) {
+    public Result<String> logout(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId != null) {
             authService.logout(userId);

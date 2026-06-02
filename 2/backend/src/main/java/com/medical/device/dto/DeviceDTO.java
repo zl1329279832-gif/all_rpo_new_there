@@ -1,14 +1,10 @@
 package com.medical.device.dto;
 
-import com.medical.device.enums.DeviceStatus;
-import com.medical.device.enums.RiskLevel;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * 设备DTO
- */
 @Data
 public class DeviceDTO {
 
@@ -20,11 +16,7 @@ public class DeviceDTO {
 
     private String deviceType;
 
-    private String model;
-
-    private String brand;
-
-    private String specification;
+    private String deviceModel;
 
     private String serialNumber;
 
@@ -34,25 +26,27 @@ public class DeviceDTO {
 
     private BigDecimal purchasePrice;
 
-    private Long departmentId;
+    private Long deptId;
 
     private String location;
 
-    private String responsiblePerson;
+    private Integer status;
 
-    private String contactPhone;
+    private Integer riskLevel;
 
-    private RiskLevel riskLevel;
+    private Integer qcStatus;
 
-    private DeviceStatus status;
+    private LocalDate warrantyStart;
 
-    private LocalDate warrantyStartDate;
-
-    private LocalDate warrantyEndDate;
+    private LocalDate warrantyEnd;
 
     private LocalDate nextMaintenanceDate;
 
     private LocalDate nextCalibrationDate;
 
-    private String remark;
+    private Integer totalDowntime;
+
+    private String maintainer;
+
+    private String description;
 }

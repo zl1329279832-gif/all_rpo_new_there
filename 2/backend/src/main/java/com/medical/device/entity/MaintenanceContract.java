@@ -6,9 +6,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * 维保合同实体类
- */
 @Data
 @TableName("maintenance_contract")
 public class MaintenanceContract {
@@ -28,32 +25,8 @@ public class MaintenanceContract {
     @TableField("device_id")
     private Long deviceId;
 
-    @TableField("device_ids")
-    private String deviceIds;
-
-    @TableField("supplier_id")
-    private Long supplierId;
-
-    @TableField("supplier_name")
-    private String supplierName;
-
-    @TableField("contract_amount")
-    private BigDecimal contractAmount;
-
-    @TableField("payment_method")
-    private Integer paymentMethod;
-
-    @TableField("start_date")
-    private LocalDate startDate;
-
-    @TableField("end_date")
-    private LocalDate endDate;
-
-    @TableField("maintenance_frequency")
-    private Integer maintenanceFrequency;
-
-    @TableField("service_content")
-    private String serviceContent;
+    @TableField("supplier")
+    private String supplier;
 
     @TableField("contact_person")
     private String contactPerson;
@@ -61,11 +34,23 @@ public class MaintenanceContract {
     @TableField("contact_phone")
     private String contactPhone;
 
-    @TableField("contract_status")
-    private Integer contractStatus;
+    @TableField("start_date")
+    private LocalDate startDate;
 
-    @TableField("attachment")
-    private String attachment;
+    @TableField("end_date")
+    private LocalDate endDate;
+
+    @TableField("contract_amount")
+    private BigDecimal contractAmount;
+
+    @TableField("payment_status")
+    private Integer paymentStatus;
+
+    @TableField("status")
+    private Integer status;
+
+    @TableField("content")
+    private String content;
 
     @TableField("remark")
     private String remark;

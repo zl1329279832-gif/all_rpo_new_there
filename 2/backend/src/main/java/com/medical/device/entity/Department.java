@@ -4,11 +4,8 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-/**
- * 部门实体类
- */
 @Data
-@TableName("sys_department")
+@TableName("department")
 public class Department {
 
     @TableId(value = "id", type = IdType.AUTO)
@@ -23,14 +20,17 @@ public class Department {
     @TableField("parent_id")
     private Long parentId;
 
-    @TableField("sort")
-    private Integer sort;
-
     @TableField("leader")
     private String leader;
 
     @TableField("phone")
     private String phone;
+
+    @TableField("address")
+    private String address;
+
+    @TableField("sort_order")
+    private Integer sortOrder;
 
     @TableField("status")
     private Integer status;

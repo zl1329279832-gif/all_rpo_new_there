@@ -1,13 +1,10 @@
 package com.medical.device.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.medical.device.enums.QcResult;
 import lombok.Data;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * 质检记录实体类
- */
 @Data
 @TableName("qc_record")
 public class QcRecord {
@@ -15,53 +12,41 @@ public class QcRecord {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("record_code")
-    private String recordCode;
-
     @TableField("plan_id")
     private Long planId;
 
     @TableField("device_id")
     private Long deviceId;
 
-    @TableField("qc_person_id")
-    private Long qcPersonId;
+    @TableField("qc_date")
+    private LocalDate qcDate;
 
-    @TableField("qc_person_name")
-    private String qcPersonName;
+    @TableField("qc_type")
+    private Integer qcType;
 
-    @TableField("plan_start_time")
-    private LocalDateTime planStartTime;
+    @TableField("executor_id")
+    private Long executorId;
 
-    @TableField("plan_end_time")
-    private LocalDateTime planEndTime;
-
-    @TableField("actual_start_time")
-    private LocalDateTime actualStartTime;
-
-    @TableField("actual_end_time")
-    private LocalDateTime actualEndTime;
-
-    @TableField("qc_items")
-    private String qcItems;
+    @TableField("executor_name")
+    private String executorName;
 
     @TableField("qc_result")
-    private QcResult qcResult;
+    private Integer qcResult;
 
-    @TableField("qc_desc")
-    private String qcDesc;
+    @TableField("qc_data")
+    private String qcData;
 
-    @TableField("qc_images")
-    private String qcImages;
+    @TableField("deviation_description")
+    private String deviationDescription;
 
-    @TableField("has_problem")
-    private Integer hasProblem;
+    @TableField("handle_measure")
+    private String handleMeasure;
 
-    @TableField("problem_desc")
-    private String problemDesc;
+    @TableField("recheck_date")
+    private LocalDate recheckDate;
 
-    @TableField("handle_suggestion")
-    private String handleSuggestion;
+    @TableField("recheck_result")
+    private Integer recheckResult;
 
     @TableField("remark")
     private String remark;

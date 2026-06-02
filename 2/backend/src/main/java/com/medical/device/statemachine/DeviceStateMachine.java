@@ -1,7 +1,5 @@
 package com.medical.device.statemachine;
 
-import com.medical.device.enums.DeviceStatus;
-import com.medical.device.enums.QcResult;
 import com.medical.device.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,72 +12,47 @@ import java.util.Set;
 @Component
 public class DeviceStateMachine {
 
-    private final Map<DeviceStatus, Set<DeviceStatus>> transitionMap = new HashMap<>();
+    private final Map<Integer, Set<Integer>> transitionMap = new HashMap<>();
 
     public DeviceStateMachine() {
-        transitionMap.put(DeviceStatus.NORMAL, 
-            Set.of(DeviceStatus.IN_MAINTENANCE, DeviceStatus.IN_REPAIR, DeviceStatus.IN_CALIBRATION, DeviceStatus.IDLE, DeviceStatus.SCRAPPED));
-        
-        transitionMap.put(DeviceStatus.IN_MAINTENANCE,
-            Set.of(DeviceStatus.NORMAL, DeviceStatus.IN_REPAIR, DeviceStatus.SCRAPPED));
-        
-        transitionMap.put(DeviceStatus.IN_REPAIR,
-            Set.of(DeviceStatus.NORMAL, DeviceStatus.IN_MAINTENANCE, DeviceStatus.SCRAPPED));
-        
-        transitionMap.put(DeviceStatus.IN_CALIBRATION,
-            Set.of(DeviceStatus.NORMAL, DeviceStatus.IN_REPAIR, DeviceStatus.SCRAPPED));
-        
-        transitionMap.put(DeviceStatus.IDLE,
-            Set.of(DeviceStatus.NORMAL, DeviceStatus.IN_MAINTENANCE, DeviceStatus.IN_REPAIR, DeviceStatus.SCRAPPED));
-        
-        transitionMap.put(DeviceStatus.SCRAPPED, Set.of());
+        transitionMap.put(1, Set.of(2, 3, 5, 6, 4));
+        transitionMap.put(2, Set.of(1, 3, 4));
+        transitionMap.put(3, Set.of(1, 2, 4));
+        transitionMap.put(5, Set.of(1, 3, 4));
+        transitionMap.put(6, Set.of(1, 2, 3, 4));
+        transitionMap.put(4, Set.of());
     }
 
-    public boolean canTransition(DeviceStatus current, DeviceStatus target) {
+    public boolean canTransition(Integer current, Integer target) {
         if (current == null || target == null) {
             return false;
         }
         return transitionMap.getOrDefault(current, Set.of()).contains(target);
     }
 
-    public DeviceStatus transition(DeviceStatus current, DeviceStatus target, Integer qcStatus) {
+    public void transition(Integer current, Integer target, Integer qcStatus) {
         if (!canTransition(current, target)) {
-            throw new BusinessException("设备状态不允许从 " + current.getDescription() + " 转换为 " + target.getDescription());
+            String currentDesc = getStatusDesc(current);
+            String targetDesc = getStatusDesc(target);
+            throw new BusinessException("设备状态不允许从 " + currentDesc + " 转换为 " + targetDesc);
         }
-        
-        if (target == DeviceStatus.NORMAL && qcStatus != null && qcStatus == 2) {
+
+        if (target == 1 && qcStatus != null && qcStatus == 2) {
             throw new BusinessException("质控不合格的设备禁止标记为正常使用");
         }
-        
-        log.info("设备状态转换: {} -> {}", current.getDescription(), target.getDescription());
-        return target;
+
+        log.info("设备状态转换: {} -> {}", getStatusDesc(current), getStatusDesc(target));
     }
 
-    public DeviceStatus startMaintenance(DeviceStatus current) {
-        return transition(current, DeviceStatus.IN_MAINTENANCE, null);
-    }
-
-    public DeviceStatus startRepair(DeviceStatus current) {
-        return transition(current, DeviceStatus.IN_REPAIR, null);
-    }
-
-    public DeviceStatus startCalibration(DeviceStatus current) {
-        return transition(current, DeviceStatus.IN_CALIBRATION, null);
-    }
-
-    public DeviceStatus completeMaintenance(DeviceStatus current, Integer qcStatus) {
-        return transition(current, DeviceStatus.NORMAL, qcStatus);
-    }
-
-    public DeviceStatus completeRepair(DeviceStatus current, Integer qcStatus) {
-        return transition(current, DeviceStatus.NORMAL, qcStatus);
-    }
-
-    public DeviceStatus completeCalibration(DeviceStatus current, Integer qcStatus) {
-        return transition(current, DeviceStatus.NORMAL, qcStatus);
-    }
-
-    public DeviceStatus scrap(DeviceStatus current) {
-        return transition(current, DeviceStatus.SCRAPPED, null);
+    private String getStatusDesc(Integer status) {
+        return switch (status) {
+            case 1 -> "正常使用";
+            case 2 -> "维护中";
+            case 3 -> "维修中";
+            case 4 -> "已报废";
+            case 5 -> "校准中";
+            case 6 -> "闲置";
+            default -> "未知(" + status + ")";
+        };
     }
 }

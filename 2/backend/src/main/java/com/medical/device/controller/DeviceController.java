@@ -44,7 +44,7 @@ public class DeviceController {
     @Operation(summary = "创建设备")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN')")
-    public Result<Void> createDevice(@RequestBody Device device) {
+    public Result<String> createDevice(@RequestBody Device device) {
         deviceService.createDevice(device);
         return Result.success("创建设备成功");
     }
@@ -52,7 +52,7 @@ public class DeviceController {
     @Operation(summary = "更新设备")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN')")
-    public Result<Void> updateDevice(@PathVariable Long id, @RequestBody Device device) {
+    public Result<String> updateDevice(@PathVariable Long id, @RequestBody Device device) {
         device.setId(id);
         deviceService.updateDevice(device);
         return Result.success("更新设备成功");
@@ -61,7 +61,7 @@ public class DeviceController {
     @Operation(summary = "删除设备")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN')")
-    public Result<Void> deleteDevice(@PathVariable Long id) {
+    public Result<String> deleteDevice(@PathVariable Long id) {
         deviceService.deleteDevice(id);
         return Result.success("删除设备成功");
     }
@@ -69,7 +69,7 @@ public class DeviceController {
     @Operation(summary = "更新设备质控状态")
     @PutMapping("/{id}/qc-status")
     @PreAuthorize("hasAnyRole('ADMIN', 'QC_STAFF')")
-    public Result<Void> updateQcStatus(@PathVariable Long id, @RequestParam Integer qcStatus) {
+    public Result<String> updateQcStatus(@PathVariable Long id, @RequestParam Integer qcStatus) {
         deviceService.updateQcStatus(id, qcStatus);
         return Result.success("更新质控状态成功");
     }
