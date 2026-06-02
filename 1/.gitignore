@@ -6,51 +6,200 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+*.log.*
+
+# Runtime logs
+runtime.log
+error.log
+access.log
+debug.log
 
 # Dependencies
 node_modules
 .pnp
 .pnp.js
+.pnp.cjs
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
 
 # Build outputs
 dist
 dist-ssr
+dist-*
 *.local
+build
+out
+output
+
+# Cache directories
+.cache
+.parcel-cache
+.eslintcache
+.stylelintcache
+.temp
+.tmp
+*.tsbuildinfo
+
+# Model and 3D cache
+*.glb.cache
+*.gltf.cache
+*.obj.cache
+*.fbx.cache
+model-cache
+3d-cache
+texture-cache
+
+# Debug screenshots and recordings
+screenshots
+screencaps
+recordings
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.webm
+!docs/**/*.png
+!docs/**/*.jpg
+!docs/**/*.jpeg
+!docs/**/*.gif
+
+# Local test data
+test-data
+local-data
+private-data
+*.test.json
+*.local.json
+*.dev.json
+test-results
+playwright-report
+coverage
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
 # Environment variables
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.*.local
-
-# Cache
-.cache
-.parcel-cache
-.temp
-.tmp
+.envrc
 
 # OS files
 Thumbs.db
 .DS_Store
 .DS_Store?
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
 
 # Testing
 coverage
 *.lcov
+.nyc_output
 
-# Misc
+# Temporary files
 *.bak
 *.tmp
+*.temp
 *.swp
 *.swo
 *~
+*.old
+*.backup
+*.orig
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+# Uncomment below if you want to keep lock files
+# !package-lock.json
+# !yarn.lock
+# !pnpm-lock.yaml
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Vite
+.vite
+.vite/*
+
+# Vue
+.vue-temp
+.vuepress/dist
+
+# Three.js specific
+*.bin
+*.glb
+*.gltf
+*.obj
+*.fbx
+*.stl
+*.blend
+*.blend1
+# Uncomment if you want to keep model files in repo
+# !public/models/**/*.glb
+# !public/models/**/*.gltf
+
+# Image cache
+*.thumb
+*.cache.png
+*.cache.jpg
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.pgsql
+*.mysql
+
+# Local config
+config.local.js
+config.local.ts
+local.config.js
+local.config.ts
+
+# Performance profiles
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+*.tracing
+*.timeline
+
+# Uploads
+uploads/
+tmp-uploads/
+temp-uploads/
+
+# Generated files
+generated/
+*.generated.*
+auto-generated/
+
+# Backup
+backup/
+backups/
+*.bak
+*.backup

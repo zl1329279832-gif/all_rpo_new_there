@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { RobotBuilder } from './RobotBuilder'
 import { MaterialSystem } from '../core/MaterialSystem'
 import { AnimationStateMachine } from '../core/AnimationStateMachine'
-import { RobotPart, RobotState } from '../types'
+import { RobotPart, RobotState, RobotAnimationState, PathPoint, Task } from '../types'
 
 export class RobotController {
   public robotGroup: THREE.Group
@@ -10,10 +10,20 @@ export class RobotController {
   private materialSystem: MaterialSystem
   private animationStateMachine: AnimationStateMachine
   private originalPositions: Map<string, THREE.Vector3> = new Map()
+  private originalRotations: Map<string, THREE.Euler> = new Map()
   private robotState: RobotState
   private isExploded: boolean = false
   private isTransparent: boolean = false
   private isMaintenance: boolean = false
+  private showSensorViz: boolean = false
+  private trajectoryHistory: THREE.Vector3[] = []
+  private maxTrajectoryLength: number = 500
+  private trajectoryLine: THREE.Line | null = null
+  private currentPath: PathPoint[] = []
+  private pathProgress: number = 0
+  private moveSpeed: number = 3
+  private rotationSpeed: number = 2
+  private highlightedParts: Set<string> = new Set()
 
   constructor(materialSystem: MaterialSystem) {
     this.materialSystem = materialSystem
@@ -28,18 +38,24 @@ export class RobotController {
     })
 
     this.robotState = {
-      position: new THREE.Vector3(0, 0, 0),
+      position: new THREE.Vector3(-8, 0, 0),
       rotation: 0,
+      targetRotation: 0,
       batteryLevel: 85,
       liftHeight: 0,
+      targetLiftHeight: 0,
       isCharging: false,
       isMoving: false,
       isAvoiding: false,
       hasPayload: false,
-      currentAnimation: 'idle'
+      currentAnimation: 'idle',
+      previousAnimation: 'idle',
+      speed: 1,
+      pathIndex: 0
     }
 
     this.setupAnimations()
+    this.createTrajectoryLine()
   }
 
   private setupAnimations() {
@@ -47,15 +63,21 @@ export class RobotController {
       this.animateWheels(progress)
       this.animateLidar(progress)
       this.animateLeds(progress)
+      this.updateMovement()
+      this.consumeBattery()
     })
 
     this.animationStateMachine.onStateAnimate('turning', (progress) => {
       this.animateWheels(progress * 2)
-      this.robotGroup.rotation.y = Math.sin(progress * 0.5) * 0.3
+      this.updateRotation()
     })
 
     this.animationStateMachine.onStateAnimate('lifting', (progress) => {
-      this.animateLift(progress)
+      this.animateLift(progress, true)
+    })
+
+    this.animationStateMachine.onStateAnimate('lowering', (progress) => {
+      this.animateLift(progress, false)
     })
 
     this.animationStateMachine.onStateAnimate('charging', (progress) => {
@@ -66,10 +88,61 @@ export class RobotController {
       this.animateAvoiding(progress)
     })
 
+    this.animationStateMachine.onStateAnimate('pickingUp', (progress) => {
+      this.animatePickup(progress)
+    })
+
+    this.animationStateMachine.onStateAnimate('droppingOff', (progress) => {
+      this.animateDropoff(progress)
+    })
+
+    this.animationStateMachine.onStateAnimate('returning', (progress) => {
+      this.animateWheels(progress)
+      this.animateLidar(progress)
+      this.updateMovement()
+      this.consumeBattery()
+    })
+
+    this.animationStateMachine.onStateAnimate('fault', (progress) => {
+      this.animateFault(progress)
+    })
+
+    this.animationStateMachine.onStateAnimate('paused', () => {
+      this.animateLidar(this.animationStateMachine.getProgress())
+    })
+
     this.animationStateMachine.onStateAnimate('idle', (progress) => {
       this.animateLidar(progress * 0.5)
       this.animateBreathing(progress)
+      this.updateTrajectory()
     })
+
+    this.animationStateMachine.onStateEnter('charging', () => {
+      this.robotState.isCharging = true
+    })
+
+    this.animationStateMachine.onStateExit('charging', () => {
+      this.robotState.isCharging = false
+    })
+  }
+
+  private createTrajectoryLine() {
+    const geometry = new THREE.BufferGeometry()
+    const positions = new Float32Array(this.maxTrajectoryLength * 3)
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geometry.setDrawRange(0, 0)
+
+    const material = new THREE.LineBasicMaterial({
+      color: 0x00ff00,
+      transparent: true,
+      opacity: 0.6,
+      linewidth: 2
+    })
+
+    this.trajectoryLine = new THREE.Line(geometry, material)
+    this.trajectoryLine.name = 'trajectoryLine'
+    this.trajectoryLine.visible = false
+    this.robotGroup.parent?.add(this.trajectoryLine)
   }
 
   private animateWheels(progress: number) {
@@ -78,7 +151,7 @@ export class RobotController {
       if (wheel) {
         wheel.children.forEach(child => {
           if (child instanceof THREE.Mesh && child.geometry instanceof THREE.TorusGeometry) {
-            child.rotation.x = progress * 10
+            child.rotation.x = progress * 8 * this.robotState.speed
           }
         })
       }
@@ -90,8 +163,13 @@ export class RobotController {
     if (lidar) {
       const scanRing = lidar.getObjectByName('lidarScanRing')
       if (scanRing) {
-        scanRing.rotation.z = progress * 5
+        scanRing.rotation.z = progress * 6
       }
+    }
+
+    const builder = this.parts.get('lidar')?.mesh.parent as any
+    if (builder && builder.userData && typeof builder.userData.updateLidarScan === 'function') {
+      builder.userData.updateLidarScan(progress * 10)
     }
   }
 
@@ -102,18 +180,20 @@ export class RobotController {
         strip.children.forEach((child, idx) => {
           if (child instanceof THREE.Mesh && 'emissiveIntensity' in child.material) {
             const mat = child.material as THREE.MeshStandardMaterial
-            mat.emissiveIntensity = 0.3 + Math.sin(progress * 3 + idx * 0.5) * 0.7
+            mat.emissiveIntensity = 0.3 + Math.sin(progress * 4 + idx * 0.3) * 0.7
           }
         })
       }
     }
   }
 
-  private animateLift(progress: number) {
+  private animateLift(progress: number, isLifting: boolean) {
     const lift = this.parts.get('liftMechanism')?.mesh
     const tray = this.parts.get('payloadTray')?.mesh
     
-    const liftAmount = Math.sin(progress) * 0.5 + 0.5
+    const targetHeight = isLifting ? 1 : 0
+    const currentProgress = Math.min(1, progress / 2)
+    const liftAmount = isLifting ? currentProgress : 1 - currentProgress
     
     if (lift) {
       lift.position.y = 0.6 + liftAmount * 0.8
@@ -121,6 +201,16 @@ export class RobotController {
     }
     if (tray) {
       tray.position.y = 2.0 + liftAmount * 0.8
+    }
+
+    if (currentProgress >= 1) {
+      if (isLifting) {
+        this.robotState.hasPayload = true
+        this.playAnimation('moving')
+      } else {
+        this.robotState.hasPayload = false
+        this.playAnimation('idle')
+      }
     }
   }
 
@@ -130,21 +220,74 @@ export class RobotController {
       batteryIndicator.children.forEach((child, idx) => {
         if (child instanceof THREE.Mesh && 'emissiveIntensity' in child.material) {
           const mat = child.material as THREE.MeshStandardMaterial
-          const active = (Math.floor(progress * 2) + idx) % 4 < Math.ceil(this.robotState.batteryLevel / 25)
-          mat.emissiveIntensity = active ? 0.8 + Math.sin(progress * 10) * 0.2 : 0.1
+          const active = (Math.floor(progress * 3) + idx) % 4 < Math.ceil(this.robotState.batteryLevel / 25)
+          mat.emissiveIntensity = active ? 0.6 + Math.sin(progress * 8) * 0.4 : 0.1
         }
       })
     }
 
     if (this.robotState.batteryLevel < 100) {
-      this.robotState.batteryLevel = Math.min(100, this.robotState.batteryLevel + 0.05)
+      this.robotState.batteryLevel = Math.min(100, this.robotState.batteryLevel + 0.1)
+    } else {
+      this.playAnimation('idle')
     }
+
+    this.animateLids(progress)
   }
 
   private animateAvoiding(progress: number) {
-    this.robotGroup.position.x = Math.sin(progress * 2) * 0.5
+    this.robotGroup.position.x = Math.sin(progress * 2) * 0.3
     this.animateWheels(progress)
     this.animateLeds(progress)
+    this.consumeBattery()
+  }
+
+  private animatePickup(progress: number) {
+    const phase = Math.floor(progress / 1.5) % 3
+    
+    switch (phase) {
+      case 0:
+        this.animateLift(progress, true)
+        break
+      case 1:
+        this.robotState.hasPayload = true
+        break
+      case 2:
+        this.playAnimation('moving')
+        break
+    }
+  }
+
+  private animateDropoff(progress: number) {
+    const phase = Math.floor(progress / 1.5) % 3
+    
+    switch (phase) {
+      case 0:
+        this.animateLift(progress, false)
+        break
+      case 1:
+        this.robotState.hasPayload = false
+        break
+      case 2:
+        this.playAnimation('idle')
+        break
+    }
+  }
+
+  private animateFault(progress: number) {
+    for (let i = 0; i < 4; i++) {
+      const strip = this.parts.get(`lightStrip_${i}`)?.mesh
+      if (strip) {
+        strip.children.forEach((child) => {
+          if (child instanceof THREE.Mesh && 'emissiveIntensity' in child.material) {
+            const mat = child.material as THREE.MeshStandardMaterial
+            mat.color.setHex(0xff0000)
+            mat.emissive.setHex(0xff0000)
+            mat.emissiveIntensity = Math.abs(Math.sin(progress * 10))
+          }
+        })
+      }
+    }
   }
 
   private animateBreathing(progress: number) {
@@ -154,37 +297,207 @@ export class RobotController {
         strip.children.forEach((child) => {
           if (child instanceof THREE.Mesh && 'emissiveIntensity' in child.material) {
             const mat = child.material as THREE.MeshStandardMaterial
-            mat.emissiveIntensity = 0.2 + Math.sin(progress * 2) * 0.2
+            mat.emissiveIntensity = 0.15 + Math.sin(progress * 1.5) * 0.15
           }
         })
       }
     }
   }
 
+  private updateMovement() {
+    if (this.currentPath.length === 0) return
+
+    const currentPoint = this.currentPath[this.robotState.pathIndex]
+    if (!currentPoint) {
+      this.playAnimation('idle')
+      return
+    }
+
+    const targetPos = currentPoint.position
+    const direction = new THREE.Vector3()
+      .subVectors(targetPos, this.robotState.position)
+      .normalize()
+
+    const distance = this.robotState.position.distanceTo(targetPos)
+    
+    if (distance < 0.1) {
+      this.robotState.position.copy(targetPos)
+      
+      if (currentPoint.action) {
+        switch (currentPoint.action) {
+          case 'lift':
+            this.playAnimation('lifting')
+            break
+          case 'lower':
+            this.playAnimation('lowering')
+            break
+          case 'wait':
+            setTimeout(() => {
+              this.advancePath()
+            }, (currentPoint.duration || 1) * 1000)
+            return
+        }
+      }
+      
+      this.advancePath()
+    } else {
+      const moveAmount = this.moveSpeed * 0.016 * this.robotState.speed
+      this.robotState.position.add(direction.multiplyScalar(moveAmount))
+      
+      this.robotState.targetRotation = Math.atan2(direction.x, direction.z)
+      this.updateRotation()
+    }
+
+    this.robotGroup.position.copy(this.robotState.position)
+    this.robotGroup.rotation.y = this.robotState.rotation
+    this.updateTrajectory()
+  }
+
+  private updateRotation() {
+    const rotationDiff = this.robotState.targetRotation - this.robotState.rotation
+    const normalizedDiff = Math.atan2(Math.sin(rotationDiff), Math.cos(rotationDiff))
+    
+    if (Math.abs(normalizedDiff) > 0.01) {
+      this.robotState.rotation += normalizedDiff * this.rotationSpeed * 0.1
+      this.robotGroup.rotation.y = this.robotState.rotation
+    }
+  }
+
+  private advancePath() {
+    if (this.robotState.pathIndex < this.currentPath.length - 1) {
+      this.robotState.pathIndex++
+    } else {
+      this.currentPath = []
+      this.robotState.pathIndex = 0
+      this.playAnimation('idle')
+    }
+  }
+
+  private consumeBattery() {
+    if (this.robotState.batteryLevel > 0) {
+      this.robotState.batteryLevel -= 0.002 * this.robotState.speed
+      
+      if (this.robotState.batteryLevel < 20 && !this.robotState.isCharging) {
+        if (this.robotState.batteryLevel < 5) {
+          this.animationStateMachine.triggerFault({
+            code: 'E001',
+            message: '电池严重不足',
+            severity: 'critical',
+            affectedParts: ['batteryCompartment']
+          })
+        }
+      }
+    }
+  }
+
+  private updateTrajectory() {
+    this.trajectoryHistory.push(this.robotState.position.clone())
+    
+    if (this.trajectoryHistory.length > this.maxTrajectoryLength) {
+      this.trajectoryHistory.shift()
+    }
+
+    if (this.trajectoryLine) {
+      const positions = this.trajectoryLine.geometry.attributes.position.array as Float32Array
+      this.trajectoryHistory.forEach((point, i) => {
+        positions[i * 3] = point.x
+        positions[i * 3 + 1] = point.y + 0.05
+        positions[i * 3 + 2] = point.z
+      })
+      this.trajectoryLine.geometry.attributes.position.needsUpdate = true
+      this.trajectoryLine.geometry.setDrawRange(0, this.trajectoryHistory.length)
+    }
+  }
+
+  private animateLids(progress: number) {
+    const contactPlate = this.parts.get('chargingContacts')?.mesh
+    if (contactPlate) {
+      contactPlate.children.forEach((child) => {
+        if (child instanceof THREE.Mesh && 'emissiveIntensity' in child.material) {
+          const mat = child.material as THREE.MeshStandardMaterial
+          mat.emissiveIntensity = 0.3 + Math.sin(progress * 5) * 0.7
+        }
+      })
+    }
+  }
+
   update(deltaTime: number) {
     this.animationStateMachine.update(deltaTime)
     this.robotState.currentAnimation = this.animationStateMachine.getState()
+    this.robotState.previousAnimation = this.animationStateMachine.getPreviousState()
+    this.robotState.isMoving = this.animationStateMachine.getState() === 'moving' || 
+                               this.animationStateMachine.getState() === 'returning'
   }
 
   playAnimation(animation: string) {
-    const validStates: RobotAnimationState[] = ['idle', 'moving', 'turning', 'lifting', 'charging', 'avoiding']
+    const validStates: RobotAnimationState[] = [
+      'idle', 'moving', 'turning', 'lifting', 'lowering', 
+      'charging', 'avoiding', 'pickingUp', 'droppingOff', 
+      'returning', 'fault', 'paused'
+    ]
     if (validStates.includes(animation as RobotAnimationState)) {
       this.animationStateMachine.setState(animation as RobotAnimationState)
     }
   }
 
+  setPath(path: PathPoint[]) {
+    this.currentPath = path
+    this.robotState.pathIndex = 0
+    this.pathProgress = 0
+  }
+
+  getPath(): PathPoint[] {
+    return [...this.currentPath]
+  }
+
+  moveTo(target: THREE.Vector3) {
+    this.currentPath = [{ position: target }]
+    this.robotState.pathIndex = 0
+    this.playAnimation('moving')
+  }
+
+  followPath(path: PathPoint[]) {
+    this.setPath(path)
+    this.playAnimation('moving')
+  }
+
+  pauseAnimation() {
+    this.animationStateMachine.setPaused(true)
+  }
+
+  resumeAnimation() {
+    this.animationStateMachine.setPaused(false)
+  }
+
+  setSpeed(speed: number) {
+    this.robotState.speed = Math.max(0.1, Math.min(3, speed))
+    this.animationStateMachine.setSpeed(speed)
+  }
+
+  triggerFault(code: string, message: string, severity: 'warning' | 'error' | 'critical', affectedParts: string[]) {
+    this.animationStateMachine.triggerFault({ code, message, severity, affectedParts })
+    affectedParts.forEach(partId => this.highlightPart(partId, true))
+  }
+
+  clearFault() {
+    this.highlightedParts.forEach(partId => this.highlightPart(partId, false))
+    this.highlightedParts.clear()
+    this.animationStateMachine.clearFault()
+  }
+
   toggleExplodedView() {
     this.isExploded = !this.isExploded
-    const explodeFactor = this.isExploded ? 1.5 : 0
+    const explodeFactor = this.isExploded ? 2 : 0
 
     this.parts.forEach((part, id) => {
       const originalPos = this.originalPositions.get(id)
       if (originalPos) {
-        const direction = part.mesh.position.clone().normalize()
-        part.mesh.position.lerp(
-          originalPos.clone().add(direction.multiplyScalar(explodeFactor)),
-          0.1
-        )
+        const direction = new THREE.Vector3()
+          .subVectors(part.mesh.position, new THREE.Vector3(0, 1, 0))
+          .normalize()
+        
+        const targetPos = originalPos.clone().add(direction.multiplyScalar(explodeFactor))
+        part.mesh.position.lerp(targetPos, 0.1)
       }
     })
   }
@@ -199,7 +512,7 @@ export class RobotController {
           const materials = Array.isArray(child.material) ? child.material : [child.material]
           materials.forEach(mat => {
             mat.transparent = this.isTransparent
-            mat.opacity = this.isTransparent ? 0.3 : 1
+            mat.opacity = this.isTransparent ? 0.25 : 1
           })
         }
       })
@@ -212,17 +525,76 @@ export class RobotController {
     if (this.isMaintenance) {
       const shell = this.parts.get('outerShell')?.mesh
       if (shell) {
-        shell.position.y += 0.5
-        shell.rotation.x = -0.3
+        shell.position.y += 0.8
+        shell.rotation.x = -0.4
+      }
+      
+      const batteryCover = this.parts.get('batteryCompartment')?.mesh?.getObjectByName('batteryCover')
+      if (batteryCover) {
+        batteryCover.position.y += 0.3
+        batteryCover.rotation.x = 0.5
       }
     } else {
-      const shell = this.parts.get('outerShell')?.mesh
-      const originalPos = this.originalPositions.get('outerShell')
-      if (shell && originalPos) {
-        shell.position.copy(originalPos)
-        shell.rotation.set(0, 0, 0)
-      }
+      this.resetPartPosition('outerShell')
+      this.resetPartPosition('batteryCompartment')
     }
+  }
+
+  private resetPartPosition(partId: string) {
+    const part = this.parts.get(partId)?.mesh
+    const originalPos = this.originalPositions.get(partId)
+    if (part && originalPos) {
+      part.position.copy(originalPos)
+      part.rotation.set(0, 0, 0)
+    }
+  }
+
+  toggleSensorVisualizations() {
+    this.showSensorViz = !this.showSensorViz
+    const vizGroup = this.robotGroup.getObjectByName('sensorVisualizations')
+    if (vizGroup) {
+      vizGroup.visible = this.showSensorViz
+    }
+  }
+
+  toggleTrajectory(show: boolean) {
+    if (this.trajectoryLine) {
+      this.trajectoryLine.visible = show
+    }
+  }
+
+  clearTrajectory() {
+    this.trajectoryHistory = []
+    if (this.trajectoryLine) {
+      this.trajectoryLine.geometry.setDrawRange(0, 0)
+    }
+  }
+
+  highlightPart(partId: string, highlight: boolean) {
+    const part = this.parts.get(partId)?.mesh
+    if (part) {
+      part.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material]
+          materials.forEach(mat => {
+            if ('emissive' in mat) {
+              const stdMat = mat as THREE.MeshStandardMaterial
+              if (highlight) {
+                stdMat.emissive.setHex(0xff0000)
+                stdMat.emissiveIntensity = 0.5
+              } else {
+                stdMat.emissive.setHex(0x000000)
+                stdMat.emissiveIntensity = 0
+              }
+            }
+          })
+        }
+      })
+    }
+  }
+
+  getHighlightedParts(): string[] {
+    return [...this.highlightedParts]
   }
 
   getState(): RobotState {
@@ -237,7 +609,20 @@ export class RobotController {
     this.robotState.batteryLevel = Math.max(0, Math.min(100, level))
   }
 
+  getAnimationStateMachine(): AnimationStateMachine {
+    return this.animationStateMachine
+  }
+
+  getTrajectoryHistory(): THREE.Vector3[] {
+    return [...this.trajectoryHistory]
+  }
+
   dispose() {
+    if (this.trajectoryLine) {
+      this.trajectoryLine.geometry.dispose()
+      ;(this.trajectoryLine.material as THREE.Material).dispose()
+    }
+
     this.robotGroup.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.geometry.dispose()
