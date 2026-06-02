@@ -9,9 +9,14 @@ export const useUserStore = defineStore('user', () => {
   const handleLogin = async (loginData) => {
     const res = await login(loginData)
     token.value = res.data.token
-    userInfo.value = res.data.userInfo
+    userInfo.value = {
+      userId: res.data.userId,
+      username: res.data.username,
+      realName: res.data.realName,
+      role: res.data.role
+    }
     localStorage.setItem('token', res.data.token)
-    localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo))
+    localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
     return res
   }
 
