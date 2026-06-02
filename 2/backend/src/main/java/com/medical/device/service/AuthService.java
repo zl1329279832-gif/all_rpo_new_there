@@ -6,6 +6,7 @@ import com.medical.device.exception.BusinessException;
 import com.medical.device.mapper.UserMapper;
 import com.medical.device.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -28,11 +30,11 @@ public class AuthService {
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        
-        if (user.getStatus() == 0) {
+
+        if (user.getStatus() != null && user.getStatus() == 0) {
             throw new BusinessException("用户已被禁用");
         }
-        
+
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())) {
             throw new BusinessException("密码错误");
         }
@@ -40,8 +42,12 @@ public class AuthService {
         String roleCode = userMapper.selectUserRoleCode(user.getId());
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), roleCode);
 
-        String tokenKey = "user:token:" + user.getId();
-        redisTemplate.opsForValue().set(tokenKey, token, 24, TimeUnit.HOURS);
+        try {
+            String tokenKey = "user:token:" + user.getId();
+            redisTemplate.opsForValue().set(tokenKey, token, 24, TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.warn("Redis写入失败，token仅保存在JWT中: {}", e.getMessage());
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);
@@ -49,13 +55,17 @@ public class AuthService {
         result.put("username", user.getUsername());
         result.put("realName", user.getRealName());
         result.put("role", roleCode);
-        
+
         return result;
     }
 
     public void logout(Long userId) {
-        String tokenKey = "user:token:" + userId;
-        redisTemplate.delete(tokenKey);
+        try {
+            String tokenKey = "user:token:" + userId;
+            redisTemplate.delete(tokenKey);
+        } catch (Exception e) {
+            log.warn("Redis删除失败: {}", e.getMessage());
+        }
     }
 
     public User getUserInfo(Long userId) {
