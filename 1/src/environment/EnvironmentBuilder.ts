@@ -809,4 +809,42 @@ export class EnvironmentBuilder {
 
     this.group.add(rackGroup)
   }
+
+  getObstacles(): THREE.Object3D[] {
+    const obstacles: THREE.Object3D[] = []
+
+    const shelfGroup = this.group.getObjectByName('shelvingSystem')
+    if (shelfGroup) {
+      shelfGroup.traverse((child) => {
+        if (child.name.startsWith('shelf_') && child !== shelfGroup) {
+          obstacles.push(child)
+        }
+      })
+    }
+
+    const coneGroup = this.group.getObjectByName('obstacleCones')
+    if (coneGroup) {
+      coneGroup.traverse((child) => {
+        if (child.name.startsWith('cone_') && child !== coneGroup) {
+          obstacles.push(child)
+        }
+      })
+    }
+
+    const rackGroup = this.group.getObjectByName('heavyDutyRacks')
+    if (rackGroup) {
+      rackGroup.traverse((child) => {
+        if (child.name.startsWith('rack_') && child !== rackGroup) {
+          obstacles.push(child)
+        }
+      })
+    }
+
+    const charger = this.group.getObjectByName('chargingStation')
+    if (charger) {
+      obstacles.push(charger)
+    }
+
+    return obstacles
+  }
 }

@@ -8,6 +8,7 @@ export class RobotController {
   public robotGroup: THREE.Group
   public parts: Map<string, RobotPart>
   private materialSystem: MaterialSystem
+  private robotBuilder: RobotBuilder
   private animationStateMachine: AnimationStateMachine
   private originalPositions: Map<string, THREE.Vector3> = new Map()
   private originalRotations: Map<string, THREE.Euler> = new Map()
@@ -24,12 +25,14 @@ export class RobotController {
   private moveSpeed: number = 3
   private rotationSpeed: number = 2
   private highlightedParts: Set<string> = new Set()
+  private obstacleList: THREE.Object3D[] = []
+  private robotBoundingBox: THREE.Box3 = new THREE.Box3()
 
   constructor(materialSystem: MaterialSystem) {
     this.materialSystem = materialSystem
-    const builder = new RobotBuilder(materialSystem)
-    this.robotGroup = builder.build()
-    this.parts = builder.getParts()
+    this.robotBuilder = new RobotBuilder(materialSystem)
+    this.robotGroup = this.robotBuilder.build()
+    this.parts = this.robotBuilder.getParts()
     
     this.animationStateMachine = new AnimationStateMachine()
     
@@ -151,7 +154,7 @@ export class RobotController {
       if (wheel) {
         const rotor = wheel.getObjectByName(`wheelRotor_${i}`)
         if (rotor) {
-          rotor.rotation.z = progress * 8 * this.robotState.speed
+          rotor.rotation.y = progress * 8 * this.robotState.speed
         }
       }
     }
@@ -288,11 +291,14 @@ export class RobotController {
       -Math.sin(this.robotState.rotation)
     )
 
-    this.robotGroup.position.copy(this.avoidStartPos)
-      .add(robotForward.multiplyScalar(forwardOffset))
-      .add(robotRight.multiplyScalar(lateralOffset))
+    let nextPosition = this.avoidStartPos.clone()
+      .add(robotForward.clone().multiplyScalar(forwardOffset))
+      .add(robotRight.clone().multiplyScalar(lateralOffset))
 
-    this.robotState.position.copy(this.robotGroup.position)
+    if (!this.checkCollision(nextPosition)) {
+      this.robotGroup.position.copy(nextPosition)
+      this.robotState.position.copy(this.robotGroup.position)
+    }
 
     if (normalizedProgress > 0.15 && normalizedProgress < 0.35) {
       const t = (normalizedProgress - 0.15) / 0.2
@@ -319,36 +325,164 @@ export class RobotController {
     }
   }
 
+  private pickupPhase: number = 0
+  private pickupStartPos: THREE.Vector3 = new THREE.Vector3()
+
   private animatePickup(progress: number) {
-    const phase = Math.floor(progress / 1.5) % 3
-    
-    switch (phase) {
-      case 0:
-        this.animateLift(progress, true)
-        break
-      case 1:
-        this.robotState.hasPayload = true
-        break
-      case 2:
-        this.playAnimation('moving')
-        break
+    if (this.pickupPhase === 0) {
+      this.pickupStartPos.copy(this.robotGroup.position)
+      this.pickupPhase = 1
+      this.robotState.taskProgress = 0
     }
+
+    const totalDuration = 8
+    const normalizedProgress = (progress % totalDuration) / totalDuration
+
+    this.robotState.taskProgress = normalizedProgress * 100
+
+    const ease = (t: number) => t * t * (3 - 2 * t)
+
+    if (normalizedProgress < 0.2) {
+      const t = normalizedProgress / 0.2
+      const forwardOffset = ease(t) * 1.5
+      const robotForward = new THREE.Vector3(
+        Math.sin(this.robotState.rotation),
+        0,
+        Math.cos(this.robotState.rotation)
+      )
+      const nextPosition = this.pickupStartPos.clone()
+        .add(robotForward.multiplyScalar(forwardOffset))
+      
+      if (!this.checkCollision(nextPosition)) {
+        this.robotGroup.position.copy(nextPosition)
+        this.robotState.position.copy(this.robotGroup.position)
+      }
+      this.animateWheels(progress)
+      this.animateLidar(progress)
+    } else if (normalizedProgress < 0.35) {
+      const t = (normalizedProgress - 0.2) / 0.15
+      this.animateLift(t * 0.15, true)
+      this.animateLidar(progress)
+    } else if (normalizedProgress < 0.4) {
+      if (!this.robotBuilder.hasCargo()) {
+        this.robotBuilder.setCargoVisible(true)
+        this.robotState.hasPayload = true
+      }
+      this.animateLift(0.15, true)
+      this.animateLidar(progress)
+    } else if (normalizedProgress < 0.55) {
+      const t = (normalizedProgress - 0.4) / 0.15
+      this.animateLift(0.15 + t * 0.15, true)
+      this.animateLidar(progress)
+    } else if (normalizedProgress < 0.85) {
+      const t = (normalizedProgress - 0.55) / 0.3
+      const forwardOffset = 1.5 + ease(t) * 2.0
+      const robotForward = new THREE.Vector3(
+        Math.sin(this.robotState.rotation),
+        0,
+        Math.cos(this.robotState.rotation)
+      )
+      const nextPosition = this.pickupStartPos.clone()
+        .add(robotForward.multiplyScalar(forwardOffset))
+      
+      if (!this.checkCollision(nextPosition)) {
+        this.robotGroup.position.copy(nextPosition)
+        this.robotState.position.copy(this.robotGroup.position)
+      }
+      this.animateLift(0.3, true)
+      this.animateWheels(progress)
+      this.animateLidar(progress)
+    } else {
+      if (normalizedProgress >= 1.0) {
+        this.pickupPhase = 0
+        this.robotState.taskProgress = 100
+        this.playAnimation('moving')
+      }
+    }
+
+    this.animateLeds(progress)
+    this.consumeBattery()
+    this.updateTrajectory()
   }
 
+  private dropoffPhase: number = 0
+  private dropoffStartPos: THREE.Vector3 = new THREE.Vector3()
+
   private animateDropoff(progress: number) {
-    const phase = Math.floor(progress / 1.5) % 3
-    
-    switch (phase) {
-      case 0:
-        this.animateLift(progress, false)
-        break
-      case 1:
-        this.robotState.hasPayload = false
-        break
-      case 2:
-        this.playAnimation('idle')
-        break
+    if (this.dropoffPhase === 0) {
+      this.dropoffStartPos.copy(this.robotGroup.position)
+      this.dropoffPhase = 1
+      this.robotState.taskProgress = 0
     }
+
+    const totalDuration = 8
+    const normalizedProgress = (progress % totalDuration) / totalDuration
+
+    this.robotState.taskProgress = normalizedProgress * 100
+
+    const ease = (t: number) => t * t * (3 - 2 * t)
+
+    if (normalizedProgress < 0.2) {
+      const t = normalizedProgress / 0.2
+      const forwardOffset = ease(t) * 1.5
+      const robotForward = new THREE.Vector3(
+        Math.sin(this.robotState.rotation),
+        0,
+        Math.cos(this.robotState.rotation)
+      )
+      const nextPosition = this.dropoffStartPos.clone()
+        .add(robotForward.multiplyScalar(forwardOffset))
+      
+      if (!this.checkCollision(nextPosition)) {
+        this.robotGroup.position.copy(nextPosition)
+        this.robotState.position.copy(this.robotGroup.position)
+      }
+      this.animateLift(0.3, true)
+      this.animateWheels(progress)
+      this.animateLidar(progress)
+    } else if (normalizedProgress < 0.35) {
+      const t = (normalizedProgress - 0.2) / 0.15
+      this.animateLift(0.3 - t * 0.15, true)
+      this.animateLidar(progress)
+    } else if (normalizedProgress < 0.4) {
+      if (this.robotBuilder.hasCargo()) {
+        this.robotBuilder.setCargoVisible(false)
+        this.robotState.hasPayload = false
+      }
+      this.animateLift(0.15, true)
+      this.animateLidar(progress)
+    } else if (normalizedProgress < 0.55) {
+      const t = (normalizedProgress - 0.4) / 0.15
+      this.animateLift(0.15 * (1 - t), true)
+      this.animateLidar(progress)
+    } else if (normalizedProgress < 0.85) {
+      const t = (normalizedProgress - 0.55) / 0.3
+      const forwardOffset = 1.5 - ease(t) * 2.0
+      const robotForward = new THREE.Vector3(
+        Math.sin(this.robotState.rotation),
+        0,
+        Math.cos(this.robotState.rotation)
+      )
+      const nextPosition = this.dropoffStartPos.clone()
+        .add(robotForward.multiplyScalar(Math.max(forwardOffset, -0.5)))
+      
+      if (!this.checkCollision(nextPosition)) {
+        this.robotGroup.position.copy(nextPosition)
+        this.robotState.position.copy(this.robotGroup.position)
+      }
+      this.animateWheels(progress)
+      this.animateLidar(progress)
+    } else {
+      if (normalizedProgress >= 1.0) {
+        this.dropoffPhase = 0
+        this.robotState.taskProgress = 100
+        this.playAnimation('idle')
+      }
+    }
+
+    this.animateLeds(progress)
+    this.consumeBattery()
+    this.updateTrajectory()
   }
 
   private animateFault(progress: number) {
@@ -419,10 +553,31 @@ export class RobotController {
       this.advancePath()
     } else {
       const moveAmount = this.moveSpeed * 0.016 * this.robotState.speed
-      this.robotState.position.add(direction.multiplyScalar(moveAmount))
-      
-      this.robotState.targetRotation = Math.atan2(direction.x, direction.z)
-      this.updateRotation()
+      let nextPosition = this.robotState.position.clone().add(
+        direction.clone().multiplyScalar(moveAmount)
+      )
+
+      if (this.checkCollision(nextPosition)) {
+        const avoidDir = this.findAvoidanceDirection(
+          this.robotState.position,
+          direction
+        )
+
+        if (avoidDir) {
+          nextPosition = this.robotState.position.clone().add(
+            avoidDir.clone().multiplyScalar(moveAmount * 0.5)
+          )
+          if (!this.checkCollision(nextPosition)) {
+            this.robotState.position.copy(nextPosition)
+            this.robotState.targetRotation = Math.atan2(avoidDir.x, avoidDir.z)
+            this.updateRotation()
+          }
+        }
+      } else {
+        this.robotState.position.copy(nextPosition)
+        this.robotState.targetRotation = Math.atan2(direction.x, direction.z)
+        this.updateRotation()
+      }
     }
 
     this.robotGroup.position.copy(this.robotState.position)
@@ -692,6 +847,83 @@ export class RobotController {
 
   getTrajectoryHistory(): THREE.Vector3[] {
     return [...this.trajectoryHistory]
+  }
+
+  registerObstacles(obstacles: THREE.Object3D[]) {
+    this.obstacleList = obstacles
+  }
+
+  addObstacle(obstacle: THREE.Object3D) {
+    if (!this.obstacleList.includes(obstacle)) {
+      this.obstacleList.push(obstacle)
+    }
+  }
+
+  removeObstacle(obstacle: THREE.Object3D) {
+    const index = this.obstacleList.indexOf(obstacle)
+    if (index > -1) {
+      this.obstacleList.splice(index, 1)
+    }
+  }
+
+  clearObstacles() {
+    this.obstacleList = []
+  }
+
+  private checkCollision(nextPosition: THREE.Vector3): boolean {
+    const robotHalfSize = new THREE.Vector3(1.1, 1.2, 0.9)
+    const robotBox = new THREE.Box3(
+      new THREE.Vector3(
+        nextPosition.x - robotHalfSize.x,
+        0,
+        nextPosition.z - robotHalfSize.z
+      ),
+      new THREE.Vector3(
+        nextPosition.x + robotHalfSize.x,
+        robotHalfSize.y,
+        nextPosition.z + robotHalfSize.z
+      )
+    )
+
+    const safetyMargin = 0.3
+
+    for (const obstacle of this.obstacleList) {
+      if (!obstacle.visible) continue
+
+      const obstacleBox = new THREE.Box3().setFromObject(obstacle)
+
+      obstacleBox.min.x -= safetyMargin
+      obstacleBox.min.z -= safetyMargin
+      obstacleBox.max.x += safetyMargin
+      obstacleBox.max.z += safetyMargin
+
+      if (robotBox.intersectsBox(obstacleBox)) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  private findAvoidanceDirection(
+    currentPos: THREE.Vector3,
+    desiredDir: THREE.Vector3
+  ): THREE.Vector3 | null {
+    const testDirections = [
+      new THREE.Vector3(desiredDir.z, 0, -desiredDir.x),
+      new THREE.Vector3(-desiredDir.z, 0, desiredDir.x),
+      new THREE.Vector3(desiredDir.x + desiredDir.z * 0.5, 0, desiredDir.z - desiredDir.x * 0.5).normalize(),
+      new THREE.Vector3(desiredDir.x - desiredDir.z * 0.5, 0, desiredDir.z + desiredDir.x * 0.5).normalize()
+    ]
+
+    for (const dir of testDirections) {
+      const testPos = currentPos.clone().add(dir.clone().multiplyScalar(0.5))
+      if (!this.checkCollision(testPos)) {
+        return dir
+      }
+    }
+
+    return null
   }
 
   dispose() {

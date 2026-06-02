@@ -306,6 +306,9 @@ onMounted(() => {
   const environment = environmentBuilder.build()
   sceneManager.scene.add(environment)
 
+  const obstacles = environmentBuilder.getObstacles()
+  robotController.registerObstacles(obstacles)
+
   interactionSystem = new InteractionSystem(
     sceneManager.camera,
     sceneManager.renderer.domElement

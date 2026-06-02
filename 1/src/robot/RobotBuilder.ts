@@ -28,6 +28,7 @@ export class RobotBuilder {
     this.createChargingContacts()
     this.createShellAndSeams()
     this.createPayloadTray()
+    this.createCargo()
     this.createSensorVisualizations()
 
     return this.group
@@ -1501,6 +1502,131 @@ export class RobotBuilder {
       trayGroup,
       'payload'
     )
+  }
+
+  private cargoGroup: THREE.Group | null = null
+
+  private createCargo() {
+    const cargoGroup = new THREE.Group()
+    cargoGroup.name = 'cargo'
+    cargoGroup.visible = false
+    cargoGroup.position.y = 0.12
+
+    const palletBase = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.15, 1.0),
+      this.materialSystem.clone('plasticWood')
+    )
+    cargoGroup.add(palletBase)
+
+    for (let i = 0; i < 3; i++) {
+      const skid = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.15, 1.0),
+        this.materialSystem.clone('plasticWood')
+      )
+      skid.position.set(-0.4 + i * 0.4, -0.08, 0)
+      cargoGroup.add(skid)
+    }
+
+    const box1 = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 0.8, 0.9),
+      this.materialSystem.clone('plasticWood')
+    )
+    box1.position.y = 0.55
+    cargoGroup.add(box1)
+
+    const box2 = new THREE.Mesh(
+      new THREE.BoxGeometry(1.05, 0.7, 0.85),
+      this.materialSystem.clone('plasticWood')
+    )
+    box2.position.y = 1.3
+    cargoGroup.add(box2)
+
+    const strap1 = new THREE.Mesh(
+      new THREE.BoxGeometry(1.12, 0.06, 0.06),
+      this.materialSystem.clone('plasticBlue')
+    )
+    strap1.position.set(0, 0.55, 0)
+    cargoGroup.add(strap1)
+
+    const strap2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.82, 0.06),
+      this.materialSystem.clone('plasticBlue')
+    )
+    strap2.position.set(-0.4, 0.55, 0.35)
+    cargoGroup.add(strap2)
+
+    const strap3 = strap2.clone()
+    strap3.position.x = 0.4
+    cargoGroup.add(strap3)
+
+    const strap4 = strap2.clone()
+    strap4.position.z = -0.35
+    cargoGroup.add(strap4)
+
+    const strap5 = strap2.clone()
+    strap5.position.set(0.4, 0.55, -0.35)
+    cargoGroup.add(strap5)
+
+    const label1 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.25, 0.15, 0.01),
+      this.materialSystem.clone('plasticWhite')
+    )
+    label1.position.set(0.3, 0.6, 0.455)
+    cargoGroup.add(label1)
+
+    const label2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 0.12, 0.01),
+      this.materialSystem.clone('plasticGreen')
+    )
+    label2.position.set(-0.35, 0.3, 0.455)
+    cargoGroup.add(label2)
+
+    const warningStripe1 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.6, 0.01),
+      this.materialSystem.clone('safetyOrange')
+    )
+    warningStripe1.position.set(0, 0.6, 0.455)
+    cargoGroup.add(warningStripe1)
+
+    for (let i = 0; i < 4; i++) {
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(0.35, 0.5, 0.4),
+        this.materialSystem.clone('plasticWhite')
+      )
+      box.position.set(-0.35 + (i % 2) * 0.7, 1.6, -0.2 + Math.floor(i / 2) * 0.4)
+      cargoGroup.add(box)
+
+      const boxLabel = new THREE.Mesh(
+        new THREE.BoxGeometry(0.15, 0.08, 0.01),
+        this.materialSystem.clone('plasticGray')
+      )
+      boxLabel.position.copy(box.position)
+      boxLabel.position.z += 0.205
+      cargoGroup.add(boxLabel)
+    }
+
+    const fragileSticker = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.12, 0.01),
+      this.materialSystem.clone('plasticWhite')
+    )
+    fragileSticker.position.set(-0.45, 1.3, 0.425)
+    cargoGroup.add(fragileSticker)
+
+    this.cargoGroup = cargoGroup
+    const liftGroup = this.group.getObjectByName('liftMechanism')
+    if (liftGroup) {
+      liftGroup.add(cargoGroup)
+    }
+  }
+
+  setCargoVisible(visible: boolean) {
+    if (this.cargoGroup) {
+      this.cargoGroup.visible = visible
+    }
+  }
+
+  hasCargo(): boolean {
+    return this.cargoGroup ? this.cargoGroup.visible : false
   }
 
   private createSensorVisualizations() {
