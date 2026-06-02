@@ -19,7 +19,7 @@ public class RepairOrder {
     private Long deviceId;
 
     @TableField("fault_type")
-    private Integer faultType;
+    private String faultType;
 
     @TableField("fault_description")
     private String faultDescription;
