@@ -172,12 +172,15 @@ export class RobotBuilder {
       wheelGroup.position.set(pos.x, 0.18, pos.z)
       wheelGroup.rotation.y = pos.rot
 
+      const wheelRotor = new THREE.Group()
+      wheelRotor.name = `wheelRotor_${index}`
+
       const tire = new THREE.Mesh(
         new THREE.TorusGeometry(0.18, 0.06, 16, 36),
         this.materialSystem.clone('rubberBlack')
       )
       tire.rotation.x = Math.PI / 2
-      wheelGroup.add(tire)
+      wheelRotor.add(tire)
 
       for (let i = 0; i < 24; i++) {
         const tread = new THREE.Mesh(
@@ -191,7 +194,7 @@ export class RobotBuilder {
           0
         )
         tread.rotation.z = angle + Math.PI / 2
-        wheelGroup.add(tread)
+        wheelRotor.add(tread)
       }
 
       const wheelHub = new THREE.Mesh(
@@ -199,14 +202,14 @@ export class RobotBuilder {
         this.materialSystem.clone('metalSteel')
       )
       wheelHub.rotation.x = Math.PI / 2
-      wheelGroup.add(wheelHub)
+      wheelRotor.add(wheelHub)
 
       const hubDetail = new THREE.Mesh(
         new THREE.TorusGeometry(0.07, 0.008, 8, 24),
         this.materialSystem.clone('metalAluminum')
       )
       hubDetail.rotation.x = Math.PI / 2
-      wheelGroup.add(hubDetail)
+      wheelRotor.add(hubDetail)
 
       for (let i = 0; i < 6; i++) {
         const spoke = new THREE.Mesh(
@@ -220,7 +223,7 @@ export class RobotBuilder {
           0
         )
         spoke.rotation.z = angle
-        wheelGroup.add(spoke)
+        wheelRotor.add(spoke)
       }
 
       const hubCap = new THREE.Mesh(
@@ -228,14 +231,16 @@ export class RobotBuilder {
         this.materialSystem.clone('plasticBlue')
       )
       hubCap.position.z = 0.021
-      wheelGroup.add(hubCap)
+      wheelRotor.add(hubCap)
 
       const capLogo = new THREE.Mesh(
         new THREE.RingGeometry(0.02, 0.05, 6),
         this.materialSystem.clone('plasticWhite')
       )
       capLogo.position.z = 0.022
-      wheelGroup.add(capLogo)
+      wheelRotor.add(capLogo)
+
+      wheelGroup.add(wheelRotor)
 
       const suspension = new THREE.Mesh(
         new THREE.BoxGeometry(0.15, 0.15, 0.1),
@@ -736,8 +741,45 @@ export class RobotBuilder {
     mountingBracket.position.y = -0.09
     frontCameraGroup.add(mountingBracket)
 
-    this.createScrewHole(frontCameraGroup, 0.08, -0.07, 0.02, 0.015)
-    this.createScrewHole(frontCameraGroup, -0.08, -0.07, 0.02, 0.015)
+    const supportArm = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.35, 0.05),
+      this.materialSystem.clone('metalSteelBrushed')
+    )
+    supportArm.position.set(0, -0.28, 0)
+    frontCameraGroup.add(supportArm)
+
+    const armReinforcement1 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 0.02, 0.12),
+      this.materialSystem.clone('metalAluminum')
+    )
+    armReinforcement1.position.set(0.04, -0.15, 0.03)
+    armReinforcement1.rotation.x = 0.3
+    frontCameraGroup.add(armReinforcement1)
+
+    const armReinforcement2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 0.02, 0.12),
+      this.materialSystem.clone('metalAluminum')
+    )
+    armReinforcement2.position.set(-0.04, -0.15, 0.03)
+    armReinforcement2.rotation.x = 0.3
+    frontCameraGroup.add(armReinforcement2)
+
+    const basePlate = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.03, 0.08),
+      this.materialSystem.clone('metalSteel')
+    )
+    basePlate.position.set(0, -0.46, 0)
+    frontCameraGroup.add(basePlate)
+
+    this.createScrewHole(frontCameraGroup, 0.04, -0.45, 0.02, 0.012)
+    this.createScrewHole(frontCameraGroup, -0.04, -0.45, 0.02, 0.012)
+
+    const cableConduit = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.012, 0.25, 6),
+      this.materialSystem.clone('plasticDark')
+    )
+    cableConduit.position.set(0.04, -0.25, -0.04)
+    frontCameraGroup.add(cableConduit)
 
     this.registerPart(
       'frontCamera',

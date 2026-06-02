@@ -149,11 +149,10 @@ export class RobotController {
     for (let i = 0; i < 4; i++) {
       const wheel = this.parts.get(`wheel_${i}`)?.mesh
       if (wheel) {
-        wheel.children.forEach(child => {
-          if (child instanceof THREE.Mesh && child.geometry instanceof THREE.TorusGeometry) {
-            child.rotation.x = progress * 8 * this.robotState.speed
-          }
-        })
+        const rotor = wheel.getObjectByName(`wheelRotor_${i}`)
+        if (rotor) {
+          rotor.rotation.z = progress * 8 * this.robotState.speed
+        }
       }
     }
   }
@@ -235,11 +234,89 @@ export class RobotController {
     this.animateLids(progress)
   }
 
+  private avoidPathPhase: number = 0
+  private avoidStartPos: THREE.Vector3 = new THREE.Vector3()
+  private avoidOffset: number = 0
+
   private animateAvoiding(progress: number) {
-    this.robotGroup.position.x = Math.sin(progress * 2) * 0.3
+    if (this.avoidPathPhase === 0) {
+      this.avoidStartPos.copy(this.robotGroup.position)
+      this.avoidPathPhase = 1
+      this.avoidOffset = 0
+    }
+
+    const totalDuration = 6
+    const normalizedProgress = (progress % totalDuration) / totalDuration
+
+    let lateralOffset = 0
+    let forwardOffset = 0
+
+    if (normalizedProgress < 0.15) {
+      const t = normalizedProgress / 0.15
+      const ease = t * t * (3 - 2 * t)
+      lateralOffset = 0
+      forwardOffset = ease * 0.3
+    } else if (normalizedProgress < 0.35) {
+      const t = (normalizedProgress - 0.15) / 0.2
+      const ease = t * t * (3 - 2 * t)
+      lateralOffset = ease * 1.8
+      forwardOffset = 0.3 + t * 0.5
+    } else if (normalizedProgress < 0.65) {
+      const t = (normalizedProgress - 0.35) / 0.3
+      lateralOffset = 1.8
+      forwardOffset = 0.8 + t * 2.0
+    } else if (normalizedProgress < 0.85) {
+      const t = (normalizedProgress - 0.65) / 0.2
+      const ease = t * t * (3 - 2 * t)
+      lateralOffset = 1.8 * (1 - ease)
+      forwardOffset = 2.8 + t * 0.5
+    } else {
+      const t = (normalizedProgress - 0.85) / 0.15
+      const ease = t * t * (3 - 2 * t)
+      lateralOffset = 0
+      forwardOffset = 3.3 + ease * 0.2
+    }
+
+    const robotForward = new THREE.Vector3(
+      Math.sin(this.robotState.rotation),
+      0,
+      Math.cos(this.robotState.rotation)
+    )
+    const robotRight = new THREE.Vector3(
+      Math.cos(this.robotState.rotation),
+      0,
+      -Math.sin(this.robotState.rotation)
+    )
+
+    this.robotGroup.position.copy(this.avoidStartPos)
+      .add(robotForward.multiplyScalar(forwardOffset))
+      .add(robotRight.multiplyScalar(lateralOffset))
+
+    this.robotState.position.copy(this.robotGroup.position)
+
+    if (normalizedProgress > 0.15 && normalizedProgress < 0.35) {
+      const t = (normalizedProgress - 0.15) / 0.2
+      this.robotState.targetRotation = this.robotState.rotation + t * 0.4
+      this.updateRotation()
+    } else if (normalizedProgress > 0.65 && normalizedProgress < 0.85) {
+      const t = (normalizedProgress - 0.65) / 0.2
+      this.robotState.targetRotation = this.robotState.rotation - t * 0.4
+      this.updateRotation()
+    }
+
     this.animateWheels(progress)
     this.animateLeds(progress)
     this.consumeBattery()
+    this.updateTrajectory()
+
+    if (normalizedProgress >= 1.0) {
+      this.avoidPathPhase = 0
+      this.robotGroup.position.copy(this.avoidStartPos).add(
+        new THREE.Vector3(Math.sin(this.robotState.rotation), 0, Math.cos(this.robotState.rotation)).multiplyScalar(3.5)
+      )
+      this.robotState.position.copy(this.robotGroup.position)
+      this.playAnimation('idle')
+    }
   }
 
   private animatePickup(progress: number) {
