@@ -4,16 +4,16 @@
       <el-form :model="filterForm" inline class="filter-form">
         <el-form-item label="工单状态">
           <el-select v-model="filterForm.status" placeholder="全部状态" clearable>
-            <el-option label="待派单" value="PENDING" />
-            <el-option label="已派单" value="ASSIGNED" />
-            <el-option label="维修中" value="IN_PROGRESS" />
-            <el-option label="待验收" value="FOR_CHECK" />
-            <el-option label="已完成" value="COMPLETED" />
-            <el-option label="已取消" value="CANCELLED" />
+            <el-option label="待派单" :value="1" />
+            <el-option label="已派单" :value="2" />
+            <el-option label="维修中" :value="3" />
+            <el-option label="待验收" :value="4" />
+            <el-option label="已完成" :value="5" />
+            <el-option label="已取消" :value="0" />
           </el-select>
         </el-form-item>
         <el-form-item label="设备名称">
-          <el-input v-model="filterForm.deviceName" placeholder="请输入设备名称" clearable />
+          <el-input v-model="filterForm.keyword" placeholder="请输入设备名称" clearable />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
@@ -45,14 +45,14 @@
         <el-table-column prop="faultType" label="故障类型" min-width="100">
           <template #default="{ row }">{{ getFaultTypeText(row.faultType) }}</template>
         </el-table-column>
-        <el-table-column prop="description" label="故障描述" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="reporter" label="报修人" min-width="100" />
+        <el-table-column prop="faultDescription" label="故障描述" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="reporterName" label="报修人" min-width="100" />
         <el-table-column prop="status" label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" min-width="160" />
+        <el-table-column prop="reportTime" label="创建时间" min-width="160" />
         <el-table-column label="操作" fixed="right" width="280">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleView(row)">详情</el-button>
@@ -61,28 +61,28 @@
               type="primary"
               size="small"
               @click="handleDispatch(row)"
-              :disabled="row.status !== 'PENDING'"
+              :disabled="row.status !== 1"
             >派单</el-button>
             <el-button
               link
               type="warning"
               size="small"
               @click="handleStartRepair(row)"
-              :disabled="row.status !== 'ASSIGNED'"
+              :disabled="row.status !== 2"
             >开始维修</el-button>
             <el-button
               link
               type="success"
               size="small"
               @click="handleCompleteRepair(row)"
-              :disabled="row.status !== 'IN_PROGRESS'"
+              :disabled="row.status !== 3"
             >完成维修</el-button>
             <el-button
               link
               type="success"
               size="small"
               @click="handleAccept(row)"
-              :disabled="row.status !== 'FOR_CHECK'"
+              :disabled="row.status !== 4"
             >验收</el-button>
           </template>
         </el-table-column>
@@ -102,34 +102,34 @@
 
     <el-dialog v-model="createDialogVisible" title="创建维修工单" width="600px" :close-on-click-modal="false">
       <el-form :model="createForm" :rules="createFormRules" ref="createFormRef" label-width="100px">
-        <el-form-item label="设备名称" prop="deviceId">
-          <el-select v-model="createForm.deviceId" placeholder="请选择设备" style="width: 100%">
-            <el-option v-for="device in deviceList" :key="device.id" :label="device.name" :value="device.id" />
+        <el-form-item label="设备" prop="deviceId">
+          <el-select v-model="createForm.deviceId" placeholder="请选择设备" style="width: 100%" filterable>
+            <el-option v-for="device in deviceList" :key="device.id" :label="`${device.name} (${device.code})`" :value="device.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="故障类型" prop="faultType">
           <el-select v-model="createForm.faultType" placeholder="请选择故障类型" style="width: 100%">
-            <el-option label="机械故障" value="MECHANICAL" />
-            <el-option label="电路故障" value="ELECTRICAL" />
-            <el-option label="软件故障" value="SOFTWARE" />
-            <el-option label="其他故障" value="OTHER" />
+            <el-option label="机械故障" :value="1" />
+            <el-option label="电路故障" :value="2" />
+            <el-option label="软件故障" :value="3" />
+            <el-option label="其他故障" :value="4" />
           </el-select>
         </el-form-item>
-        <el-form-item label="故障描述" prop="description">
-          <el-input v-model="createForm.description" type="textarea" :rows="4" placeholder="请详细描述故障情况" />
+        <el-form-item label="故障描述" prop="faultDescription">
+          <el-input v-model="createForm.faultDescription" type="textarea" :rows="4" placeholder="请详细描述故障情况" />
         </el-form-item>
-        <el-form-item label="紧急程度" prop="priority">
-          <el-radio-group v-model="createForm.priority">
-            <el-radio label="LOW">低</el-radio>
-            <el-radio label="MEDIUM">中</el-radio>
-            <el-radio label="HIGH">高</el-radio>
+        <el-form-item label="紧急程度" prop="faultLevel">
+          <el-radio-group v-model="createForm.faultLevel">
+            <el-radio :label="1">低</el-radio>
+            <el-radio :label="2">中</el-radio>
+            <el-radio :label="3">高</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="报修人" prop="reporter">
-          <el-input v-model="createForm.reporter" placeholder="请输入报修人姓名" />
+        <el-form-item label="报修人" prop="reporterName">
+          <el-input v-model="createForm.reporterName" placeholder="请输入报修人姓名" />
         </el-form-item>
-        <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="createForm.contactPhone" placeholder="请输入联系电话" />
+        <el-form-item label="联系电话" prop="reporterPhone">
+          <el-input v-model="createForm.reporterPhone" placeholder="请输入联系电话" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -142,20 +142,8 @@
       <el-form :model="dispatchForm" :rules="dispatchFormRules" ref="dispatchFormRef" label-width="100px">
         <el-form-item label="维修人员" prop="repairerId">
           <el-select v-model="dispatchForm.repairerId" placeholder="请选择维修人员" style="width: 100%">
-            <el-option label="张三" :value="1" />
-            <el-option label="李四" :value="2" />
-            <el-option label="王五" :value="3" />
-            <el-option label="赵六" :value="4" />
+            <el-option v-for="user in engineerList" :key="user.id" :label="user.realName" :value="user.id" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="预计完成时间" prop="expectedCompleteTime">
-          <el-date-picker
-            v-model="dispatchForm.expectedCompleteTime"
-            type="datetime"
-            placeholder="选择预计完成时间"
-            style="width: 100%"
-            value-format="YYYY-MM-DD HH:mm:ss"
-          />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="dispatchForm.remark" type="textarea" :rows="3" placeholder="请输入备注（可选）" />
@@ -172,14 +160,12 @@
         <el-form-item label="维修内容" prop="repairContent">
           <el-input v-model="completeForm.repairContent" type="textarea" :rows="4" placeholder="请详细描述维修内容" />
         </el-form-item>
-        <el-form-item label="更换配件" prop="partsReplaced">
-          <el-input v-model="completeForm.partsReplaced" type="textarea" :rows="2" placeholder="请列出更换的配件（如无则填无）" />
-        </el-form-item>
-        <el-form-item label="维修费用" prop="repairCost">
-          <el-input-number v-model="completeForm.repairCost" :min="0" :precision="2" placeholder="请输入维修费用" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="completeForm.remark" type="textarea" :rows="2" placeholder="请输入备注（可选）" />
+        <el-form-item label="维修结果" prop="repairResult">
+          <el-radio-group v-model="completeForm.repairResult">
+            <el-radio label="已修复">已修复</el-radio>
+            <el-radio label="待配件">待配件</el-radio>
+            <el-radio label="无法修复">无法修复</el-radio>
+          </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -193,19 +179,18 @@
         <el-descriptions-item label="工单编号">{{ currentOrder.orderNo }}</el-descriptions-item>
         <el-descriptions-item label="设备名称">{{ currentOrder.deviceName }}</el-descriptions-item>
         <el-descriptions-item label="故障类型">{{ getFaultTypeText(currentOrder.faultType) }}</el-descriptions-item>
-        <el-descriptions-item label="紧急程度">{{ getPriorityText(currentOrder.priority) }}</el-descriptions-item>
+        <el-descriptions-item label="紧急程度">{{ getPriorityText(currentOrder.faultLevel) }}</el-descriptions-item>
         <el-descriptions-item label="当前状态">
           <el-tag :type="getStatusType(currentOrder.status)">{{ getStatusText(currentOrder.status) }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="报修人">{{ currentOrder.reporter }}</el-descriptions-item>
-        <el-descriptions-item label="联系电话">{{ currentOrder.contactPhone }}</el-descriptions-item>
-        <el-descriptions-item label="维修人员">{{ currentOrder.repairer || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ currentOrder.createTime }}</el-descriptions-item>
+        <el-descriptions-item label="报修人">{{ currentOrder.reporterName }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话">{{ currentOrder.reporterPhone }}</el-descriptions-item>
+        <el-descriptions-item label="维修人员">{{ currentOrder.repairerName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ currentOrder.reportTime }}</el-descriptions-item>
         <el-descriptions-item label="完成时间">{{ currentOrder.completeTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="故障描述" :span="2">{{ currentOrder.description }}</el-descriptions-item>
+        <el-descriptions-item label="故障描述" :span="2">{{ currentOrder.faultDescription }}</el-descriptions-item>
         <el-descriptions-item label="维修内容" :span="2">{{ currentOrder.repairContent || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="更换配件" :span="2">{{ currentOrder.partsReplaced || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="维修费用" :span="2">{{ currentOrder.repairCost ? '¥' + currentOrder.repairCost : '-' }}</el-descriptions-item>
+        <el-descriptions-item label="维修结果" :span="2">{{ currentOrder.repairResult || '-' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -215,7 +200,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus } from '@element-plus/icons-vue'
-import { getRepairOrderPage, createRepairOrder, updateRepairOrderStatus } from '@/api/repair'
+import { getRepairOrderPage, createRepairOrder, assignOrder, startRepair, completeRepair, acceptOrder } from '@/api/repair'
+import { getDeviceList } from '@/api/device'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -228,8 +214,8 @@ const dispatchFormRef = ref(null)
 const completeFormRef = ref(null)
 
 const filterForm = reactive({
-  status: '',
-  deviceName: ''
+  status: null,
+  keyword: ''
 })
 
 const pagination = reactive({
@@ -239,62 +225,54 @@ const pagination = reactive({
 })
 
 const tableData = ref([])
-
-const deviceList = ref([
-  { id: 1, name: 'CT扫描仪' },
-  { id: 2, name: '核磁共振仪' },
-  { id: 3, name: 'X光机' },
-  { id: 4, name: 'B超机' },
-  { id: 5, name: '心电图机' }
+const deviceList = ref([])
+const engineerList = ref([
+  { id: 3, realName: '维修工程师1' },
+  { id: 4, realName: '维修工程师2' }
 ])
 
 const currentOrderId = ref(null)
 
 const createForm = reactive({
-  deviceId: '',
-  faultType: '',
-  description: '',
-  priority: 'MEDIUM',
-  reporter: '',
-  contactPhone: ''
+  deviceId: null,
+  faultType: null,
+  faultDescription: '',
+  faultLevel: 2,
+  reporterName: '',
+  reporterPhone: ''
 })
 
 const dispatchForm = reactive({
-  repairerId: '',
-  expectedCompleteTime: '',
+  repairerId: null,
   remark: ''
 })
 
 const completeForm = reactive({
   repairContent: '',
-  partsReplaced: '',
-  repairCost: 0,
-  remark: ''
+  repairResult: '已修复'
 })
 
 const currentOrder = reactive({
   orderNo: '',
   deviceName: '',
-  faultType: '',
-  description: '',
-  priority: '',
-  reporter: '',
-  contactPhone: '',
-  repairer: '',
-  status: '',
-  createTime: '',
+  faultType: null,
+  faultDescription: '',
+  faultLevel: null,
+  reporterName: '',
+  reporterPhone: '',
+  repairerName: '',
+  status: null,
+  reportTime: '',
   completeTime: '',
   repairContent: '',
-  partsReplaced: '',
-  repairCost: null
+  repairResult: ''
 })
 
 const createFormRules = {
   deviceId: [{ required: true, message: '请选择设备', trigger: 'change' }],
   faultType: [{ required: true, message: '请选择故障类型', trigger: 'change' }],
-  description: [{ required: true, message: '请输入故障描述', trigger: 'blur' }],
-  reporter: [{ required: true, message: '请输入报修人', trigger: 'blur' }],
-  contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
+  faultDescription: [{ required: true, message: '请输入故障描述', trigger: 'blur' }],
+  reporterName: [{ required: true, message: '请输入报修人', trigger: 'blur' }]
 }
 
 const dispatchFormRules = {
@@ -303,77 +281,51 @@ const dispatchFormRules = {
 
 const completeFormRules = {
   repairContent: [{ required: true, message: '请输入维修内容', trigger: 'blur' }],
-  partsReplaced: [{ required: true, message: '请填写更换配件', trigger: 'blur' }]
+  repairResult: [{ required: true, message: '请选择维修结果', trigger: 'change' }]
 }
 
 const getStatusType = (status) => {
-  const map = {
-    PENDING: 'info',
-    ASSIGNED: 'primary',
-    IN_PROGRESS: 'warning',
-    FOR_CHECK: 'warning',
-    COMPLETED: 'success',
-    CANCELLED: 'danger'
-  }
+  const map = { 1: 'info', 2: 'primary', 3: 'warning', 4: 'warning', 5: 'success', 0: 'danger' }
   return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const map = {
-    PENDING: '待派单',
-    ASSIGNED: '已派单',
-    IN_PROGRESS: '维修中',
-    FOR_CHECK: '待验收',
-    COMPLETED: '已完成',
-    CANCELLED: '已取消'
-  }
-  return map[status] || status
+  const map = { 1: '待派单', 2: '已派单', 3: '维修中', 4: '待验收', 5: '已完成', 0: '已取消' }
+  return map[status] || '未知'
 }
 
 const getFaultTypeText = (type) => {
-  const map = {
-    MECHANICAL: '机械故障',
-    ELECTRICAL: '电路故障',
-    SOFTWARE: '软件故障',
-    OTHER: '其他故障'
-  }
-  return map[type] || type
+  const map = { 1: '机械故障', 2: '电路故障', 3: '软件故障', 4: '其他故障' }
+  return map[type] || '未知'
 }
 
 const getPriorityText = (priority) => {
-  const map = {
-    LOW: '低',
-    MEDIUM: '中',
-    HIGH: '高'
+  const map = { 1: '低', 2: '中', 3: '高' }
+  return map[priority] || '未知'
+}
+
+const fetchDevices = async () => {
+  try {
+    const res = await getDeviceList({ pageNum: 1, pageSize: 100 })
+    deviceList.value = res.data?.records || []
+  } catch (error) {
+    console.error('获取设备列表失败', error)
   }
-  return map[priority] || priority
 }
 
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getRepairOrderPage({
+    const params = {
       ...filterForm,
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize
-    })
-    tableData.value = res.data?.records || [
-      { id: 1, orderNo: 'WO20260602001', deviceName: 'CT扫描仪', faultType: 'MECHANICAL', description: '设备扫描时发出异常噪音', reporter: '王医生', status: 'PENDING', priority: 'HIGH', contactPhone: '13800138001', createTime: '2026-06-02 09:30:00' },
-      { id: 2, orderNo: 'WO20260602002', deviceName: 'B超机', faultType: 'SOFTWARE', description: '图像显示系统偶尔卡顿', reporter: '李医生', status: 'ASSIGNED', repairer: '张三', priority: 'MEDIUM', contactPhone: '13800138002', createTime: '2026-06-02 10:15:00' },
-      { id: 3, orderNo: 'WO20260601001', deviceName: 'X光机', faultType: 'ELECTRICAL', description: '曝光按钮失灵', reporter: '张医生', status: 'IN_PROGRESS', repairer: '李四', priority: 'HIGH', contactPhone: '13800138003', createTime: '2026-06-01 14:20:00' },
-      { id: 4, orderNo: 'WO20260601002', deviceName: '心电图机', faultType: 'OTHER', description: '打印纸无法正常输出', reporter: '刘医生', status: 'FOR_CHECK', repairer: '王五', repairContent: '更换了打印电机', partsReplaced: '打印电机 x1', repairCost: 500, priority: 'LOW', contactPhone: '13800138004', createTime: '2026-06-01 16:45:00' },
-      { id: 5, orderNo: 'WO20260531001', deviceName: '核磁共振仪', faultType: 'MECHANICAL', description: '门体开关不顺畅', reporter: '陈医生', status: 'COMPLETED', repairer: '赵六', repairContent: '润滑门体轨道，调整门体位置', partsReplaced: '无', repairCost: 200, completeTime: '2026-06-01 11:00:00', priority: 'MEDIUM', contactPhone: '13800138005', createTime: '2026-05-31 09:00:00' }
-    ]
-    pagination.total = res.data?.total || 5
+    }
+    const res = await getRepairOrderPage(params)
+    tableData.value = res.data?.records || []
+    pagination.total = res.data?.total || 0
   } catch (error) {
-    tableData.value = [
-      { id: 1, orderNo: 'WO20260602001', deviceName: 'CT扫描仪', faultType: 'MECHANICAL', description: '设备扫描时发出异常噪音', reporter: '王医生', status: 'PENDING', priority: 'HIGH', contactPhone: '13800138001', createTime: '2026-06-02 09:30:00' },
-      { id: 2, orderNo: 'WO20260602002', deviceName: 'B超机', faultType: 'SOFTWARE', description: '图像显示系统偶尔卡顿', reporter: '李医生', status: 'ASSIGNED', repairer: '张三', priority: 'MEDIUM', contactPhone: '13800138002', createTime: '2026-06-02 10:15:00' },
-      { id: 3, orderNo: 'WO20260601001', deviceName: 'X光机', faultType: 'ELECTRICAL', description: '曝光按钮失灵', reporter: '张医生', status: 'IN_PROGRESS', repairer: '李四', priority: 'HIGH', contactPhone: '13800138003', createTime: '2026-06-01 14:20:00' },
-      { id: 4, orderNo: 'WO20260601002', deviceName: '心电图机', faultType: 'OTHER', description: '打印纸无法正常输出', reporter: '刘医生', status: 'FOR_CHECK', repairer: '王五', repairContent: '更换了打印电机', partsReplaced: '打印电机 x1', repairCost: 500, priority: 'LOW', contactPhone: '13800138004', createTime: '2026-06-01 16:45:00' },
-      { id: 5, orderNo: 'WO20260531001', deviceName: '核磁共振仪', faultType: 'MECHANICAL', description: '门体开关不顺畅', reporter: '陈医生', status: 'COMPLETED', repairer: '赵六', repairContent: '润滑门体轨道，调整门体位置', partsReplaced: '无', repairCost: 200, completeTime: '2026-06-01 11:00:00', priority: 'MEDIUM', contactPhone: '13800138005', createTime: '2026-05-31 09:00:00' }
-    ]
-    pagination.total = 5
+    ElMessage.error('获取数据失败')
   } finally {
     loading.value = false
   }
@@ -385,16 +337,18 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
-  Object.keys(filterForm).forEach(key => {
-    filterForm[key] = ''
-  })
+  filterForm.status = null
+  filterForm.keyword = ''
   handleSearch()
 }
 
 const handleCreate = () => {
-  Object.keys(createForm).forEach(key => {
-    createForm[key] = key === 'priority' ? 'MEDIUM' : ''
-  })
+  createForm.deviceId = null
+  createForm.faultType = null
+  createForm.faultDescription = ''
+  createForm.faultLevel = 2
+  createForm.reporterName = ''
+  createForm.reporterPhone = ''
   createDialogVisible.value = true
 }
 
@@ -418,17 +372,14 @@ const handleSubmitCreate = async () => {
 }
 
 const handleView = (row) => {
-  Object.keys(currentOrder).forEach(key => {
-    currentOrder[key] = row[key] || ''
-  })
+  Object.assign(currentOrder, row)
   detailDialogVisible.value = true
 }
 
 const handleDispatch = (row) => {
   currentOrderId.value = row.id
-  Object.keys(dispatchForm).forEach(key => {
-    dispatchForm[key] = ''
-  })
+  dispatchForm.repairerId = null
+  dispatchForm.remark = ''
   dispatchDialogVisible.value = true
 }
 
@@ -438,14 +389,11 @@ const handleSubmitDispatch = async () => {
     if (valid) {
       submitting.value = true
       try {
-        await updateRepairOrderStatus(currentOrderId.value, 'ASSIGNED')
-        const order = tableData.value.find(o => o.id === currentOrderId.value)
-        if (order) {
-          order.status = 'ASSIGNED'
-          order.repairer = ['张三', '李四', '王五', '赵六'][dispatchForm.repairerId - 1]
-        }
+        const engineer = engineerList.value.find(e => e.id === dispatchForm.repairerId)
+        await assignOrder(currentOrderId.value, dispatchForm.repairerId, engineer?.realName || '')
         ElMessage.success('派单成功')
         dispatchDialogVisible.value = false
+        fetchData()
       } catch (error) {
         ElMessage.error('派单失败')
       } finally {
@@ -462,9 +410,10 @@ const handleStartRepair = async (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await updateRepairOrderStatus(row.id, 'IN_PROGRESS')
-    row.status = 'IN_PROGRESS'
+    await startRepair(row.id)
+    row.status = 3
     ElMessage.success('已开始维修')
+    fetchData()
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('操作失败')
@@ -474,9 +423,8 @@ const handleStartRepair = async (row) => {
 
 const handleCompleteRepair = (row) => {
   currentOrderId.value = row.id
-  Object.keys(completeForm).forEach(key => {
-    completeForm[key] = key === 'repairCost' ? 0 : ''
-  })
+  completeForm.repairContent = ''
+  completeForm.repairResult = '已修复'
   completeDialogVisible.value = true
 }
 
@@ -486,16 +434,10 @@ const handleSubmitComplete = async () => {
     if (valid) {
       submitting.value = true
       try {
-        await updateRepairOrderStatus(currentOrderId.value, 'FOR_CHECK')
-        const order = tableData.value.find(o => o.id === currentOrderId.value)
-        if (order) {
-          order.status = 'FOR_CHECK'
-          order.repairContent = completeForm.repairContent
-          order.partsReplaced = completeForm.partsReplaced
-          order.repairCost = completeForm.repairCost
-        }
+        await completeRepair(currentOrderId.value, completeForm.repairContent, completeForm.repairResult, [])
         ElMessage.success('维修完成，等待验收')
         completeDialogVisible.value = false
+        fetchData()
       } catch (error) {
         ElMessage.error('操作失败')
       } finally {
@@ -512,10 +454,11 @@ const handleAccept = async (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await updateRepairOrderStatus(row.id, 'COMPLETED')
-    row.status = 'COMPLETED'
+    await acceptOrder(row.id, 1)
+    row.status = 5
     row.completeTime = new Date().toLocaleString()
     ElMessage.success('验收通过')
+    fetchData()
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('操作失败')
@@ -524,6 +467,7 @@ const handleAccept = async (row) => {
 }
 
 onMounted(() => {
+  fetchDevices()
   fetchData()
 })
 </script>

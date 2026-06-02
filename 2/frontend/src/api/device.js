@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 export function getDeviceList(params) {
   return request({
-    url: '/device/list',
+    url: '/devices',
     method: 'get',
     params
   })
@@ -10,7 +10,7 @@ export function getDeviceList(params) {
 
 export function getDevicePage(params) {
   return request({
-    url: '/device/page',
+    url: '/devices',
     method: 'get',
     params
   })
@@ -18,22 +18,22 @@ export function getDevicePage(params) {
 
 export function getDeviceById(id) {
   return request({
-    url: `/device/${id}`,
+    url: `/devices/${id}`,
     method: 'get'
   })
 }
 
 export function createDevice(data) {
   return request({
-    url: '/device',
+    url: '/devices',
     method: 'post',
     data
   })
 }
 
-export function updateDevice(data) {
+export function updateDevice(id, data) {
   return request({
-    url: '/device',
+    url: `/devices/${id}`,
     method: 'put',
     data
   })
@@ -41,15 +41,29 @@ export function updateDevice(data) {
 
 export function deleteDevice(id) {
   return request({
-    url: `/device/${id}`,
+    url: `/devices/${id}`,
     method: 'delete'
   })
 }
 
-export function updateDeviceStatus(id, status) {
+export function updateDeviceQcStatus(id, qcStatus) {
   return request({
-    url: `/device/${id}/status`,
+    url: `/devices/${id}/qc-status`,
     method: 'put',
-    params: { status }
+    params: { qcStatus }
+  })
+}
+
+export function getHighRiskDevices() {
+  return request({
+    url: '/devices/high-risk',
+    method: 'get'
+  })
+}
+
+export function getDeviceStatistics() {
+  return request({
+    url: '/devices/statistics',
+    method: 'get'
   })
 }

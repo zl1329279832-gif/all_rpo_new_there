@@ -3,28 +3,25 @@
     <el-card class="search-card">
       <el-form :model="searchForm" inline class="search-form">
         <el-form-item label="设备名称">
-          <el-input v-model="searchForm.name" placeholder="请输入设备名称" clearable />
-        </el-form-item>
-        <el-form-item label="设备编号">
-          <el-input v-model="searchForm.code" placeholder="请输入设备编号" clearable />
+          <el-input v-model="searchForm.keyword" placeholder="请输入设备名称/编号" clearable />
         </el-form-item>
         <el-form-item label="设备状态">
           <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
-            <el-option label="运行中" value="RUNNING" />
-            <el-option label="维修中" value="MAINTENANCE" />
-            <el-option label="待校准" value="CALIBRATION_PENDING" />
-            <el-option label="已停用" value="DECOMMISSIONED" />
+            <el-option label="运行中" :value="1" />
+            <el-option label="维修中" :value="2" />
+            <el-option label="待校准" :value="3" />
+            <el-option label="已停用" :value="4" />
           </el-select>
         </el-form-item>
         <el-form-item label="风险等级">
           <el-select v-model="searchForm.riskLevel" placeholder="请选择风险等级" clearable>
-            <el-option label="高风险" value="HIGH" />
-            <el-option label="中风险" value="MEDIUM" />
-            <el-option label="低风险" value="LOW" />
+            <el-option label="高风险" :value="3" />
+            <el-option label="中风险" :value="2" />
+            <el-option label="低风险" :value="1" />
           </el-select>
         </el-form-item>
         <el-form-item label="所属科室">
-          <el-select v-model="searchForm.departmentId" placeholder="请选择科室" clearable>
+          <el-select v-model="searchForm.deptId" placeholder="请选择科室" clearable>
             <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
         </el-form-item>
@@ -57,7 +54,9 @@
         <el-table-column prop="code" label="设备编号" min-width="120" />
         <el-table-column prop="model" label="型号" min-width="100" />
         <el-table-column prop="manufacturer" label="生产厂家" min-width="120" />
-        <el-table-column prop="departmentName" label="所属科室" min-width="100" />
+        <el-table-column prop="deptId" label="所属科室" min-width="100">
+          <template #default="{ row }">{{ getDeptName(row.deptId) }}</template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
@@ -104,24 +103,24 @@
         <el-form-item label="生产厂家" prop="manufacturer">
           <el-input v-model="formData.manufacturer" placeholder="请输入生产厂家" />
         </el-form-item>
-        <el-form-item label="所属科室" prop="departmentId">
-          <el-select v-model="formData.departmentId" placeholder="请选择科室" style="width: 100%">
+        <el-form-item label="所属科室" prop="deptId">
+          <el-select v-model="formData.deptId" placeholder="请选择科室" style="width: 100%">
             <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="设备状态" prop="status">
           <el-select v-model="formData.status" placeholder="请选择状态" style="width: 100%">
-            <el-option label="运行中" value="RUNNING" />
-            <el-option label="维修中" value="MAINTENANCE" />
-            <el-option label="待校准" value="CALIBRATION_PENDING" />
-            <el-option label="已停用" value="DECOMMISSIONED" />
+            <el-option label="运行中" :value="1" />
+            <el-option label="维修中" :value="2" />
+            <el-option label="待校准" :value="3" />
+            <el-option label="已停用" :value="4" />
           </el-select>
         </el-form-item>
         <el-form-item label="风险等级" prop="riskLevel">
           <el-select v-model="formData.riskLevel" placeholder="请选择风险等级" style="width: 100%">
-            <el-option label="高风险" value="HIGH" />
-            <el-option label="中风险" value="MEDIUM" />
-            <el-option label="低风险" value="LOW" />
+            <el-option label="高风险" :value="3" />
+            <el-option label="中风险" :value="2" />
+            <el-option label="低风险" :value="1" />
           </el-select>
         </el-form-item>
         <el-form-item label="采购日期" prop="purchaseDate">
@@ -143,7 +142,7 @@
         <el-descriptions-item label="设备编号">{{ detailData.code }}</el-descriptions-item>
         <el-descriptions-item label="型号">{{ detailData.model }}</el-descriptions-item>
         <el-descriptions-item label="生产厂家">{{ detailData.manufacturer }}</el-descriptions-item>
-        <el-descriptions-item label="所属科室">{{ detailData.departmentName }}</el-descriptions-item>
+        <el-descriptions-item label="所属科室">{{ getDeptName(detailData.deptId) }}</el-descriptions-item>
         <el-descriptions-item label="设备状态">
           <el-tag :type="getStatusType(detailData.status)">{{ getStatusText(detailData.status) }}</el-tag>
         </el-descriptions-item>
@@ -162,6 +161,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus } from '@element-plus/icons-vue'
 import { getDevicePage, createDevice, updateDevice, deleteDevice } from '@/api/device'
+import { getDepartmentList } from '@/api/department'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -172,11 +172,10 @@ const isEdit = ref(false)
 const formRef = ref(null)
 
 const searchForm = reactive({
-  name: '',
-  code: '',
-  status: '',
-  riskLevel: '',
-  departmentId: ''
+  keyword: '',
+  status: null,
+  riskLevel: null,
+  deptId: null
 })
 
 const pagination = reactive({
@@ -186,14 +185,7 @@ const pagination = reactive({
 })
 
 const tableData = ref([])
-
-const departments = ref([
-  { id: 1, name: '内科' },
-  { id: 2, name: '外科' },
-  { id: 3, name: '急诊科' },
-  { id: 4, name: '放射科' },
-  { id: 5, name: '检验科' }
-])
+const departments = ref([])
 
 const formData = reactive({
   id: null,
@@ -201,9 +193,9 @@ const formData = reactive({
   code: '',
   model: '',
   manufacturer: '',
-  departmentId: '',
-  status: 'RUNNING',
-  riskLevel: 'MEDIUM',
+  deptId: null,
+  status: 1,
+  riskLevel: 2,
   purchaseDate: '',
   remark: ''
 })
@@ -213,9 +205,9 @@ const detailData = reactive({
   code: '',
   model: '',
   manufacturer: '',
-  departmentName: '',
-  status: '',
-  riskLevel: '',
+  deptId: null,
+  status: 1,
+  riskLevel: 2,
   purchaseDate: '',
   remark: ''
 })
@@ -223,57 +215,54 @@ const detailData = reactive({
 const formRules = {
   name: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
   code: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
-  departmentId: [{ required: true, message: '请选择所属科室', trigger: 'change' }],
+  deptId: [{ required: true, message: '请选择所属科室', trigger: 'change' }],
   status: [{ required: true, message: '请选择设备状态', trigger: 'change' }],
   riskLevel: [{ required: true, message: '请选择风险等级', trigger: 'change' }]
 }
 
 const getStatusType = (status) => {
-  const map = {
-    RUNNING: 'success',
-    MAINTENANCE: 'warning',
-    CALIBRATION_PENDING: 'info',
-    DECOMMISSIONED: 'danger'
-  }
+  const map = { 1: 'success', 2: 'warning', 3: 'info', 4: 'danger' }
   return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const map = {
-    RUNNING: '运行中',
-    MAINTENANCE: '维修中',
-    CALIBRATION_PENDING: '待校准',
-    DECOMMISSIONED: '已停用'
-  }
-  return map[status] || status
+  const map = { 1: '运行中', 2: '维修中', 3: '待校准', 4: '已停用' }
+  return map[status] || '未知'
 }
 
 const getRiskType = (level) => {
-  const map = {
-    HIGH: 'danger',
-    MEDIUM: 'warning',
-    LOW: 'success'
-  }
+  const map = { 3: 'danger', 2: 'warning', 1: 'success' }
   return map[level] || 'info'
 }
 
 const getRiskText = (level) => {
-  const map = {
-    HIGH: '高风险',
-    MEDIUM: '中风险',
-    LOW: '低风险'
+  const map = { 3: '高风险', 2: '中风险', 1: '低风险' }
+  return map[level] || '未知'
+}
+
+const getDeptName = (deptId) => {
+  const dept = departments.value.find(d => d.id === deptId)
+  return dept ? dept.name : '-'
+}
+
+const fetchDepartments = async () => {
+  try {
+    const res = await getDepartmentList()
+    departments.value = res.data || []
+  } catch (error) {
+    console.error('获取科室列表失败', error)
   }
-  return map[level] || level
 }
 
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await getDevicePage({
+    const params = {
       ...searchForm,
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize
-    })
+    }
+    const res = await getDevicePage(params)
     tableData.value = res.data?.records || []
     pagination.total = res.data?.total || 0
   } catch (error) {
@@ -289,34 +278,38 @@ const handleSearch = () => {
 }
 
 const handleReset = () => {
-  Object.keys(searchForm).forEach(key => {
-    searchForm[key] = ''
-  })
+  searchForm.keyword = ''
+  searchForm.status = null
+  searchForm.riskLevel = null
+  searchForm.deptId = null
   handleSearch()
 }
 
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增设备'
-  Object.keys(formData).forEach(key => {
-    formData[key] = key === 'status' ? 'RUNNING' : key === 'riskLevel' ? 'MEDIUM' : ''
-  })
+  formData.id = null
+  formData.name = ''
+  formData.code = ''
+  formData.model = ''
+  formData.manufacturer = ''
+  formData.deptId = null
+  formData.status = 1
+  formData.riskLevel = 2
+  formData.purchaseDate = ''
+  formData.remark = ''
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   isEdit.value = true
   dialogTitle.value = '编辑设备'
-  Object.keys(formData).forEach(key => {
-    formData[key] = row[key] || ''
-  })
+  Object.assign(formData, row)
   dialogVisible.value = true
 }
 
 const handleView = (row) => {
-  Object.keys(detailData).forEach(key => {
-    detailData[key] = row[key] || ''
-  })
+  Object.assign(detailData, row)
   detailVisible.value = true
 }
 
@@ -344,7 +337,7 @@ const handleSubmit = async () => {
       submitting.value = true
       try {
         if (isEdit.value) {
-          await updateDevice(formData)
+          await updateDevice(formData.id, formData)
           ElMessage.success('更新成功')
         } else {
           await createDevice(formData)
@@ -362,6 +355,7 @@ const handleSubmit = async () => {
 }
 
 onMounted(() => {
+  fetchDepartments()
   fetchData()
 })
 </script>
