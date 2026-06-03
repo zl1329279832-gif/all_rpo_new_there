@@ -29,14 +29,29 @@ public class Product implements Serializable {
     @ApiModelProperty("规格")
     private String specification;
 
+    @ApiModelProperty("商品规格（别名）")
+    private String productSpec;
+
     @ApiModelProperty("单位")
     private String unit;
+
+    @ApiModelProperty("分类ID")
+    private Long categoryId;
+
+    @ApiModelProperty("分类名称")
+    private String categoryName;
 
     @ApiModelProperty("分类")
     private String category;
 
     @ApiModelProperty("品牌")
     private String brand;
+
+    @ApiModelProperty("供应商ID")
+    private Long supplierId;
+
+    @ApiModelProperty("出库策略：1-先进先出 2-效期优先 3-指定批次")
+    private Integer outboundStrategy;
 
     @ApiModelProperty("重量(kg)")
     private BigDecimal weight;

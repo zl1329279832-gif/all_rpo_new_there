@@ -421,10 +421,10 @@ public class InventoryServiceTest {
         assertNotNull(result.getList());
         assertFalse(result.getList().isEmpty());
 
-        InventoryLog log = result.getList().get(0);
-        assertEquals(businessNo, log.getBusinessNo());
-        assertEquals(batchNo, log.getBatchNo());
-        assertEquals(1, log.getBusinessType());
+        InventoryLog inventoryLog = result.getList().get(0);
+        assertEquals(businessNo, inventoryLog.getBusinessNo());
+        assertEquals(batchNo, inventoryLog.getBatchNo());
+        assertEquals(1, inventoryLog.getBusinessType());
         log.info("库存流水查询测试完成，查询到 {} 条流水记录", result.getTotal());
     }
 

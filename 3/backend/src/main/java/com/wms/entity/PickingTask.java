@@ -66,6 +66,12 @@ public class PickingTask implements Serializable {
     @ApiModelProperty("备注")
     private String remark;
 
+    @ApiModelProperty("创建人")
+    private String createBy;
+
+    @ApiModelProperty("更新人")
+    private String updateBy;
+
     @ApiModelProperty("创建时间")
     private Date createTime;
 
