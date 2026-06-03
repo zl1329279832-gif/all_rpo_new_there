@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 
 @Api(tags = "认证接口")
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 public class AuthController {
 
     @Autowired
@@ -35,5 +35,16 @@ public class AuthController {
         String loginIp = request.getRemoteAddr();
         User user = userService.login(dto, loginIp);
         return Result.success(user);
+    }
+
+    /**
+     * 用户登出
+     *
+     * @return 登出结果
+     */
+    @ApiOperation("用户登出")
+    @PostMapping("/logout")
+    public Result<Void> logout() {
+        return Result.success();
     }
 }

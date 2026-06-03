@@ -124,7 +124,9 @@
             <if test="status != null">AND status = #{status}</if>
         </where>
         ORDER BY create_time DESC
-        LIMIT #{query.pageNum}, #{query.pageSize}
+        <if test="query != null">
+            LIMIT #{query.pageNum}, #{query.pageSize}
+        </if>
     </select>
 
     <delete id="deleteById" parameterType="java.lang.Long">

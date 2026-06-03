@@ -184,7 +184,9 @@
             <if test="handler != null and handler != ''">AND so.handler LIKE CONCAT('%', #{handler}, '%')</if>
         </where>
         ORDER BY so.create_time DESC
-        LIMIT #{query.pageNum}, #{query.pageSize}
+        <if test="query != null">
+            LIMIT #{query.pageNum}, #{query.pageSize}
+        </if>
     </select>
 
     <insert id="insertDetail" parameterType="com.wms.entity.StocktakeOrderDetail" useGeneratedKeys="true" keyProperty="id">

@@ -154,7 +154,9 @@
             <if test="batchNo != null and batchNo != ''">AND if.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
         </where>
         ORDER BY if.freeze_time DESC
-        LIMIT #{query.pageNum}, #{query.pageSize}
+        <if test="query != null">
+            LIMIT #{query.pageNum}, #{query.pageSize}
+        </if>
     </select>
 
 </mapper>

@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 @Slf4j
 @Service
@@ -40,7 +42,7 @@ public class UserServiceImpl implements UserService {
                 throw new BusinessException(ResultCode.USER_DISABLED);
             }
 
-            if (!user.getPassword().equals(dto.getPassword())) {
+            if (!user.getPassword().equals(md5(dto.getPassword()))) {
                 log.warn("登录失败，密码错误: username={}", dto.getUsername());
                 throw new BusinessException(ResultCode.PASSWORD_ERROR);
             }
@@ -52,6 +54,20 @@ public class UserServiceImpl implements UserService {
             log.info("用户登录成功: username={}, loginIp={}", dto.getUsername(), loginIp);
             return user;
         });
+    }
+
+    private String md5(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(input.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new BusinessException("MD5加密失败");
+        }
     }
 
     @Override

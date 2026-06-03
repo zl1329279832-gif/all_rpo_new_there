@@ -14,7 +14,7 @@ import java.util.List;
 
 @Api(tags = "仓库管理接口")
 @RestController
-@RequestMapping("/api/warehouse")
+@RequestMapping("/warehouse")
 public class WarehouseController {
 
     @Autowired

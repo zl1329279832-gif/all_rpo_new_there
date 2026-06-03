@@ -27,4 +27,7 @@ public interface WarehouseMapper {
 
     @Select("SELECT COUNT(*) FROM wms_warehouse")
     int selectCount();
+
+    @Select("SELECT * FROM wms_warehouse WHERE status = 1 ORDER BY id")
+    List<Warehouse> getAll();
 }

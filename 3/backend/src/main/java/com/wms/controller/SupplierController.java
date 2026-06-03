@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Api(tags = "供应商管理接口")
 @RestController
-@RequestMapping("/api/supplier")
+@RequestMapping("/supplier")
 public class SupplierController {
 
     @Autowired

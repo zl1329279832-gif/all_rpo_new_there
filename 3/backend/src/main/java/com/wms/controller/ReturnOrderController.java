@@ -21,7 +21,7 @@ import java.util.Map;
 
 @Api(tags = "退货管理接口")
 @RestController
-@RequestMapping("/api/return")
+@RequestMapping("/return")
 public class ReturnOrderController {
 
     @Autowired

@@ -21,7 +21,7 @@ import java.util.Map;
 
 @Api(tags = "拣货任务接口")
 @RestController
-@RequestMapping("/api/picking")
+@RequestMapping("/picking")
 public class PickingTaskController {
 
     @Autowired
