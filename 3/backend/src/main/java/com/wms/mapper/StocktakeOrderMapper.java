@@ -46,20 +46,8 @@ public interface StocktakeOrderMapper {
 
     StocktakeOrderDetail selectDetailById(Long id);
 
-    @Update("UPDATE wms_stocktake_order_detail SET first_count = #{firstCount}, " +
-            "second_count = #{secondCount}, " +
-            "final_count = #{finalCount}, " +
-            "diff_quantity = #{finalCount} - system_quantity, " +
-            "diff_type = CASE WHEN #{finalCount} > system_quantity THEN 1 " +
-            "WHEN #{finalCount} < system_quantity THEN 2 ELSE 3 END, " +
-            "is_counted = 1, count_time = NOW(), counter = #{counter}, " +
-            "diff_reason = #{diffReason}, " +
-            "update_time = NOW() WHERE id = #{id}")
     int updateDetailForCount(StocktakeOrderDetail detail);
 
-    @Update("UPDATE wms_stocktake_order_detail SET process_status = #{processStatus}, " +
-            "process_result = #{processResult}, process_time = NOW(), processor = #{processor}, " +
-            "update_time = NOW() WHERE id = #{id}")
     int updateDetailForProcess(@Param("id") Long id,
                                 @Param("processStatus") Integer processStatus,
                                 @Param("processResult") String processResult,
