@@ -13,8 +13,22 @@ export class ModelFactory {
     deckThickness: 0.02,
   }
 
+  private geometryCache: Map<string, THREE.BufferGeometry> = new Map()
+
   constructor() {
     this.materials = MaterialSystem.getInstance()
+  }
+
+  private _getCachedGeometry(key: string, factory: () => THREE.BufferGeometry): THREE.BufferGeometry {
+    if (!this.geometryCache.has(key)) {
+      this.geometryCache.set(key, factory())
+    }
+    return this.geometryCache.get(key)!
+  }
+
+  dispose(): void {
+    this.geometryCache.forEach((geo) => geo.dispose())
+    this.geometryCache.clear()
   }
 
   createRack(_rows: number, levels: number, bays: number): THREE.Group {

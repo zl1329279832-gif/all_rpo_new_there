@@ -4,40 +4,51 @@ function generateLocations(): LocationData[] {
   const locations: LocationData[] = []
   
   const rackConfigs = [
-    { x: -12.5, z: -8.5, direction: 1, zone: 'storage' as ZoneType, rackId: 'R01' },
-    { x: -11, z: -8.5, direction: 1, zone: 'storage' as ZoneType, rackId: 'R02' },
-    { x: -12.5, z: 7.5, direction: -1, zone: 'storage' as ZoneType, rackId: 'R03' },
-    { x: -11, z: 7.5, direction: -1, zone: 'storage' as ZoneType, rackId: 'R04' },
-    { x: 11, z: -8.5, direction: 1, zone: 'storage' as ZoneType, rackId: 'R05' },
-    { x: 12.5, z: -8.5, direction: 1, zone: 'storage' as ZoneType, rackId: 'R06' },
-    { x: 11, z: 7.5, direction: -1, zone: 'storage' as ZoneType, rackId: 'R07' },
-    { x: 12.5, z: 7.5, direction: -1, zone: 'storage' as ZoneType, rackId: 'R08' },
+    { groupX: -12, groupZ: -8, rows: 2, direction: 1, zone: 'storage' as ZoneType, rackPrefix: 'R0' },
+    { groupX: -12, groupZ: 8, rows: 2, direction: -1, zone: 'storage' as ZoneType, rackPrefix: 'R0' },
+    { groupX: 12, groupZ: -8, rows: 2, direction: -1, zone: 'storage' as ZoneType, rackPrefix: 'R0' },
+    { groupX: 12, groupZ: 8, rows: 2, direction: -1, zone: 'storage' as ZoneType, rackPrefix: 'R0' },
   ]
 
   const bays = 8
   const levels = 6
+  const bayWidth = 1.2
+  const levelHeight = 0.8
+  const rowSpacing = 1.5
 
-  rackConfigs.forEach((rack) => {
-    for (let bay = 0; bay < bays; bay++) {
-      for (let level = 0; level < levels; level++) {
-        const locationId = `${rack.rackId}-${String(bay + 1).padStart(2, '0')}-${String(level + 1).padStart(2, '0')}`
-        const occupied = Math.random() > 0.4
-        
-        locations.push({
-          id: locationId,
-          zone: rack.zone,
-          row: parseInt(rack.rackId.slice(1)),
-          bay: bay + 1,
-          level: level + 1,
-          maxWeight: 500,
-          position: {
-            x: rack.x,
-            y: level * 0.8 + 0.05,
-            z: rack.z + bay * 1.2 - 4.2,
-          },
-          occupied,
-        })
+  let rackIndex = 1
+
+  rackConfigs.forEach((group) => {
+    for (let row = 0; row < group.rows; row++) {
+      const rackId = `${group.rackPrefix}${String(rackIndex).padStart(2, '0')}`
+      const rowOffset = row * rowSpacing * group.direction
+      
+      for (let bay = 0; bay < bays; bay++) {
+        for (let level = 0; level < levels; level++) {
+          const locationId = `${rackId}-${String(bay + 1).padStart(2, '0')}-${String(level + 1).padStart(2, '0')}`
+          const occupied = Math.random() > 0.4
+          
+          const baseX = group.groupX + rowOffset
+          const baseZ = group.groupZ + (bay - bays / 2 + 0.5) * bayWidth
+          const baseY = level * levelHeight + levelHeight / 2
+          
+          locations.push({
+            id: locationId,
+            zone: group.zone,
+            row: rackIndex,
+            bay: bay + 1,
+            level: level + 1,
+            maxWeight: 500,
+            position: {
+              x: baseX,
+              y: baseY,
+              z: baseZ,
+            },
+            occupied,
+          })
+        }
       }
+      rackIndex++
     }
   })
 

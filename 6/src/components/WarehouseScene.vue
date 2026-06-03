@@ -23,9 +23,9 @@ onMounted(() => {
     
     warehouseScene.buildWarehouse(locationsWithCargo)
     
-    locationsWithCargo.forEach(async (loc) => {
-      if (loc.occupied && loc.currentCargo) {
-        await warehouseScene!.placeCargo(loc.id, false)
+    locationsWithCargo.forEach((loc) => {
+      if (loc.occupied) {
+        warehouseScene!.placeCargo(loc.id, false)
       }
     })
     
