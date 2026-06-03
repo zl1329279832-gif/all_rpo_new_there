@@ -2,12 +2,14 @@ package com.medical.device.controller;
 
 import com.medical.device.common.PageResult;
 import com.medical.device.common.Result;
+import com.medical.device.dto.InspectionTaskQueryDTO;
 import com.medical.device.entity.InspectionPlan;
 import com.medical.device.entity.InspectionTask;
 import com.medical.device.service.InspectionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -55,15 +57,15 @@ public class InspectionController {
 
     @Operation(summary = "分页查询巡检任务")
     @GetMapping("/tasks")
-    public Result<PageResult<InspectionTask>> listTasks(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) Long deviceId,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
-        PageResult<InspectionTask> result = inspectionService.listTasks(pageNum, pageSize, keyword, status, deviceId, startDate, endDate);
+    public Result<PageResult<InspectionTask>> listTasks(@Valid @ModelAttribute InspectionTaskQueryDTO queryDTO) {
+        PageResult<InspectionTask> result = inspectionService.listTasks(
+                queryDTO.getPageNum(),
+                queryDTO.getPageSize(),
+                queryDTO.getKeyword(),
+                queryDTO.getStatus(),
+                queryDTO.getDeviceId(),
+                queryDTO.getStartDate(),
+                queryDTO.getEndDate());
         return Result.success(result);
     }
 
@@ -78,6 +80,7 @@ public class InspectionController {
 
     @Operation(summary = "执行巡检任务")
     @PutMapping("/tasks/{id}/execute")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN', 'ENGINEER')")
     public Result<String> executeTask(@PathVariable Long id,
                                     @RequestParam Integer checkResult,
                                     @RequestParam(required = false) String abnormalDesc,

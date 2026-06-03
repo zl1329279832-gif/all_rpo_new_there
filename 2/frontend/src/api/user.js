@@ -52,3 +52,11 @@ export function deleteUser(id) {
     method: 'delete'
   })
 }
+
+export function getUsersByRole(roleCode) {
+  return request({
+    url: '/user/listByRole',
+    method: 'get',
+    params: { roleCode }
+  })
+}

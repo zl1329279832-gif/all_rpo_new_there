@@ -2,11 +2,13 @@ package com.medical.device.controller;
 
 import com.medical.device.common.PageResult;
 import com.medical.device.common.Result;
+import com.medical.device.dto.RepairOrderQueryDTO;
 import com.medical.device.entity.PartReplacement;
 import com.medical.device.entity.RepairOrder;
 import com.medical.device.service.RepairOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,14 +26,14 @@ public class RepairOrderController {
 
     @Operation(summary = "分页查询工单列表")
     @GetMapping
-    public Result<PageResult<RepairOrder>> listOrders(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) Integer faultLevel,
-            @RequestParam(required = false) Long deviceId) {
-        PageResult<RepairOrder> result = repairOrderService.listOrders(pageNum, pageSize, keyword, status, faultLevel, deviceId);
+    public Result<PageResult<RepairOrder>> listOrders(@Valid @ModelAttribute RepairOrderQueryDTO queryDTO) {
+        PageResult<RepairOrder> result = repairOrderService.listOrders(
+                queryDTO.getPageNum(),
+                queryDTO.getPageSize(),
+                queryDTO.getKeyword(),
+                queryDTO.getStatus(),
+                queryDTO.getFaultLevel(),
+                queryDTO.getDeviceId());
         return Result.success(result);
     }
 
@@ -44,6 +46,7 @@ public class RepairOrderController {
 
     @Operation(summary = "创建维修工单")
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN', 'ENGINEER')")
     public Result<RepairOrder> createOrder(@RequestBody RepairOrder order) {
         RepairOrder created = repairOrderService.createOrder(order);
         return Result.success(created);
@@ -91,5 +94,13 @@ public class RepairOrderController {
     public Result<Map<String, Object>> getStatistics() {
         Map<String, Object> stats = repairOrderService.getStatistics();
         return Result.success(stats);
+    }
+
+    @Operation(summary = "取消工单")
+    @PutMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DEVICE_ADMIN')")
+    public Result<String> cancelOrder(@PathVariable Long id) {
+        repairOrderService.cancelOrder(id);
+        return Result.success("工单已取消");
     }
 }

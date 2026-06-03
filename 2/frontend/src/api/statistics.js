@@ -7,6 +7,27 @@ export function getOverallStatistics() {
   })
 }
 
+export function getOverview() {
+  return request({
+    url: '/statistics/overview',
+    method: 'get'
+  })
+}
+
+export function getDashboard() {
+  return request({
+    url: '/statistics/dashboard',
+    method: 'get'
+  })
+}
+
+export function getMonthlySummary() {
+  return request({
+    url: '/statistics/monthly',
+    method: 'get'
+  })
+}
+
 export function getDeviceStats() {
   return request({
     url: '/devices/statistics',

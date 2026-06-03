@@ -58,33 +58,13 @@ public class InspectionService {
     public PageResult<InspectionTask> listTasks(int pageNum, int pageSize, String keyword,
                                                  Integer status, Long deviceId, LocalDate startDate, LocalDate endDate) {
         Page<InspectionTask> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<InspectionTask> wrapper = new LambdaQueryWrapper<>();
-
-        if (keyword != null && !keyword.isEmpty()) {
-            wrapper.and(w -> w.like(InspectionTask::getTaskName, keyword)
-                    .or().like(InspectionTask::getTaskCode, keyword));
-        }
-        if (status != null) {
-            wrapper.eq(InspectionTask::getStatus, status);
-        }
-        if (deviceId != null) {
-            wrapper.eq(InspectionTask::getDeviceId, deviceId);
-        }
-        if (startDate != null) {
-            wrapper.ge(InspectionTask::getPlanDate, startDate);
-        }
-        if (endDate != null) {
-            wrapper.le(InspectionTask::getPlanDate, endDate);
-        }
-
-        wrapper.orderByDesc(InspectionTask::getId);
-        IPage<InspectionTask> result = taskMapper.selectPage(page, wrapper);
+        IPage<InspectionTask> result = taskMapper.selectPageWithDevice(page, keyword, status, deviceId, startDate, endDate);
 
         return PageResult.of(result.getRecords(), result.getTotal(), pageNum, pageSize);
     }
 
     public List<InspectionTask> getTasksByDateRange(LocalDate startDate, LocalDate endDate) {
-        return taskMapper.selectByDateRange(startDate, endDate);
+        return taskMapper.selectByDateRangeWithDevice(startDate, endDate);
     }
 
     @Transactional(rollbackFor = Exception.class)

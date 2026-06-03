@@ -50,9 +50,12 @@
       </template>
 
       <el-table :data="tableData" v-loading="loading" border stripe>
-        <el-table-column prop="name" label="设备名称" min-width="120" />
-        <el-table-column prop="code" label="设备编号" min-width="120" />
-        <el-table-column prop="model" label="型号" min-width="100" />
+        <template #empty>
+          <el-empty description="暂无数据" />
+        </template>
+        <el-table-column prop="deviceName" label="设备名称" min-width="120" />
+        <el-table-column prop="deviceCode" label="设备编号" min-width="120" />
+        <el-table-column prop="deviceModel" label="型号" min-width="100" />
         <el-table-column prop="manufacturer" label="生产厂家" min-width="120" />
         <el-table-column prop="deptId" label="所属科室" min-width="100">
           <template #default="{ row }">{{ getDeptName(row.deptId) }}</template>
@@ -91,14 +94,14 @@
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" :close-on-click-modal="false">
       <el-form :model="formData" :rules="formRules" ref="formRef" label-width="100px">
-        <el-form-item label="设备名称" prop="name">
-          <el-input v-model="formData.name" placeholder="请输入设备名称" />
+        <el-form-item label="设备名称" prop="deviceName">
+          <el-input v-model="formData.deviceName" placeholder="请输入设备名称" />
         </el-form-item>
-        <el-form-item label="设备编号" prop="code">
-          <el-input v-model="formData.code" placeholder="请输入设备编号" />
+        <el-form-item label="设备编号" prop="deviceCode">
+          <el-input v-model="formData.deviceCode" placeholder="请输入设备编号" />
         </el-form-item>
-        <el-form-item label="型号" prop="model">
-          <el-input v-model="formData.model" placeholder="请输入型号" />
+        <el-form-item label="型号" prop="deviceModel">
+          <el-input v-model="formData.deviceModel" placeholder="请输入型号" />
         </el-form-item>
         <el-form-item label="生产厂家" prop="manufacturer">
           <el-input v-model="formData.manufacturer" placeholder="请输入生产厂家" />
@@ -138,9 +141,9 @@
 
     <el-dialog v-model="detailVisible" title="设备详情" width="600px">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="设备名称">{{ detailData.name }}</el-descriptions-item>
-        <el-descriptions-item label="设备编号">{{ detailData.code }}</el-descriptions-item>
-        <el-descriptions-item label="型号">{{ detailData.model }}</el-descriptions-item>
+        <el-descriptions-item label="设备名称">{{ detailData.deviceName }}</el-descriptions-item>
+        <el-descriptions-item label="设备编号">{{ detailData.deviceCode }}</el-descriptions-item>
+        <el-descriptions-item label="型号">{{ detailData.deviceModel }}</el-descriptions-item>
         <el-descriptions-item label="生产厂家">{{ detailData.manufacturer }}</el-descriptions-item>
         <el-descriptions-item label="所属科室">{{ getDeptName(detailData.deptId) }}</el-descriptions-item>
         <el-descriptions-item label="设备状态">
@@ -157,11 +160,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus } from '@element-plus/icons-vue'
+import { debounce } from 'lodash'
 import { getDevicePage, createDevice, updateDevice, deleteDevice } from '@/api/device'
 import { getDepartmentList } from '@/api/department'
+
+const STORAGE_KEY = 'device_list_state'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -171,27 +177,52 @@ const dialogTitle = ref('')
 const isEdit = ref(false)
 const formRef = ref(null)
 
+const loadStateFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (e) {
+    console.error('Failed to load state from localStorage:', e)
+  }
+  return null
+}
+
+const savedState = loadStateFromStorage()
+
 const searchForm = reactive({
-  keyword: '',
-  status: null,
-  riskLevel: null,
-  deptId: null
+  keyword: savedState?.searchForm?.keyword ?? '',
+  status: savedState?.searchForm?.status ?? null,
+  riskLevel: savedState?.searchForm?.riskLevel ?? null,
+  deptId: savedState?.searchForm?.deptId ?? null
 })
 
 const pagination = reactive({
-  pageNum: 1,
-  pageSize: 10,
+  pageNum: savedState?.pagination?.pageNum ?? 1,
+  pageSize: savedState?.pagination?.pageSize ?? 10,
   total: 0
 })
+
+const saveStateToStorage = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      searchForm: { ...searchForm },
+      pagination: { pageNum: pagination.pageNum, pageSize: pagination.pageSize }
+    }))
+  } catch (e) {
+    console.error('Failed to save state to localStorage:', e)
+  }
+}
 
 const tableData = ref([])
 const departments = ref([])
 
 const formData = reactive({
   id: null,
-  name: '',
-  code: '',
-  model: '',
+  deviceName: '',
+  deviceCode: '',
+  deviceModel: '',
   manufacturer: '',
   deptId: null,
   status: 1,
@@ -201,9 +232,9 @@ const formData = reactive({
 })
 
 const detailData = reactive({
-  name: '',
-  code: '',
-  model: '',
+  deviceName: '',
+  deviceCode: '',
+  deviceModel: '',
   manufacturer: '',
   deptId: null,
   status: 1,
@@ -213,8 +244,8 @@ const detailData = reactive({
 })
 
 const formRules = {
-  name: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
-  code: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
+  deviceName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
+  deviceCode: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
   deptId: [{ required: true, message: '请选择所属科室', trigger: 'change' }],
   status: [{ required: true, message: '请选择设备状态', trigger: 'change' }],
   riskLevel: [{ required: true, message: '请选择风险等级', trigger: 'change' }]
@@ -246,11 +277,15 @@ const getDeptName = (deptId) => {
 }
 
 const fetchDepartments = async () => {
+  loading.value = true
   try {
     const res = await getDepartmentList()
     departments.value = res.data || []
   } catch (error) {
     console.error('获取科室列表失败', error)
+    ElMessage.error('获取科室列表失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -265,12 +300,20 @@ const fetchData = async () => {
     const res = await getDevicePage(params)
     tableData.value = res.data?.records || []
     pagination.total = res.data?.total || 0
+    saveStateToStorage()
   } catch (error) {
     ElMessage.error('获取数据失败')
+    tableData.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
 }
+
+const debouncedSearch = debounce(() => {
+  pagination.pageNum = 1
+  fetchData()
+}, 300)
 
 const handleSearch = () => {
   pagination.pageNum = 1
@@ -285,13 +328,31 @@ const handleReset = () => {
   handleSearch()
 }
 
+watch(
+  () => searchForm.keyword,
+  () => {
+    debouncedSearch()
+  }
+)
+
+watch(
+  () => [pagination.pageNum, pagination.pageSize],
+  () => {
+    saveStateToStorage()
+  }
+)
+
+onUnmounted(() => {
+  debouncedSearch.cancel()
+})
+
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增设备'
   formData.id = null
-  formData.name = ''
-  formData.code = ''
-  formData.model = ''
+  formData.deviceName = ''
+  formData.deviceCode = ''
+  formData.deviceModel = ''
   formData.manufacturer = ''
   formData.deptId = null
   formData.status = 1

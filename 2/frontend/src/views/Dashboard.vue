@@ -2,20 +2,20 @@
   <div class="dashboard-container">
     <el-row :gutter="20" class="stat-cards">
       <el-col :span="6">
-        <el-card class="stat-card">
+        <el-card class="stat-card" v-loading="loading">
           <div class="stat-content">
             <div class="stat-icon device-icon">
               <el-icon><Monitor /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.deviceCount }}</div>
+              <div class="stat-value">{{ stats.totalDevices }}</div>
               <div class="stat-label">设备总数</div>
             </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="stat-card">
+        <el-card class="stat-card" v-loading="loading">
           <div class="stat-content">
             <div class="stat-icon repair-icon">
               <el-icon><Tools /></el-icon>
@@ -28,7 +28,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="stat-card">
+        <el-card class="stat-card" v-loading="loading">
           <div class="stat-content">
             <div class="stat-icon running-icon">
               <el-icon><CircleCheck /></el-icon>
@@ -41,13 +41,13 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="stat-card">
+        <el-card class="stat-card" v-loading="loading">
           <div class="stat-content">
             <div class="stat-icon warning-icon">
               <el-icon><Warning /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">{{ stats.warningCount }}</div>
+              <div class="stat-value">{{ stats.calibrationCount }}</div>
               <div class="stat-label">待校准</div>
             </div>
           </div>
@@ -57,13 +57,13 @@
 
     <el-row :gutter="20" class="charts">
       <el-col :span="12">
-        <el-card class="chart-card">
+        <el-card class="chart-card" v-loading="loading">
           <template #header>设备状态分布</template>
           <div ref="statusChartRef" class="chart"></div>
         </el-card>
       </el-col>
       <el-col :span="12">
-        <el-card class="chart-card">
+        <el-card class="chart-card" v-loading="loading">
           <template #header>维修趋势</template>
           <div ref="trendChartRef" class="chart"></div>
         </el-card>
@@ -73,23 +73,48 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
+import { ElMessage } from 'element-plus'
 import { Monitor, Tools, CircleCheck, Warning } from '@element-plus/icons-vue'
+import { getOverview, getDashboard } from '@/api/statistics'
 
 const statusChartRef = ref(null)
 const trendChartRef = ref(null)
+const loading = ref(false)
 
 const stats = ref({
-  deviceCount: 128,
-  repairCount: 15,
-  runningCount: 105,
-  warningCount: 8
+  totalDevices: 0,
+  runningCount: 0,
+  repairCount: 0,
+  calibrationCount: 0
 })
 
-const initStatusChart = () => {
+const colorMap = {
+  '运行中': '#67C23A',
+  '维修中': '#E6A23C',
+  '待校准': '#F56C6C',
+  '已停用': '#909399'
+}
+
+const getEmptyOption = () => ({
+  graphic: {
+    type: 'text',
+    left: 'center',
+    top: 'middle',
+    style: {
+      text: '暂无数据',
+      fontSize: 16,
+      fill: '#999'
+    }
+  }
+})
+
+const initStatusChart = (data) => {
   const chart = echarts.init(statusChartRef.value)
-  chart.setOption({
+  const hasData = data && data.length > 0
+
+  const option = {
     tooltip: {
       trigger: 'item'
     },
@@ -97,7 +122,7 @@ const initStatusChart = () => {
       bottom: '5%',
       left: 'center'
     },
-    series: [
+    series: hasData ? [
       {
         name: '设备状态',
         type: 'pie',
@@ -122,19 +147,29 @@ const initStatusChart = () => {
         labelLine: {
           show: false
         },
-        data: [
-          { value: 105, name: '运行中', itemStyle: { color: '#67C23A' } },
-          { value: 15, name: '维修中', itemStyle: { color: '#E6A23C' } },
-          { value: 8, name: '待校准', itemStyle: { color: '#F56C6C' } }
-        ]
+        data: data.map(item => ({
+          value: item.value,
+          name: item.name,
+          itemStyle: { color: colorMap[item.name] || '#409EFF' }
+        }))
       }
-    ]
+    ] : [],
+    ...(!hasData ? getEmptyOption() : {})
+  }
+
+  chart.setOption(option)
+
+  const resizeObserver = new ResizeObserver(() => {
+    chart.resize()
   })
+  resizeObserver.observe(statusChartRef.value)
 }
 
-const initTrendChart = () => {
+const initTrendChart = (data) => {
   const chart = echarts.init(trendChartRef.value)
-  chart.setOption({
+  const hasData = data && data.length > 0
+
+  const option = {
     tooltip: {
       trigger: 'axis'
     },
@@ -147,36 +182,88 @@ const initTrendChart = () => {
       bottom: '3%',
       containLabel: true
     },
-    xAxis: {
+    xAxis: hasData ? {
       type: 'category',
       boundaryGap: false,
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+      data: data.map(item => item.month)
+    } : {
+      type: 'category',
+      data: []
     },
     yAxis: {
       type: 'value'
     },
-    series: [
+    series: hasData ? [
       {
         name: '维修工单',
         type: 'line',
-        stack: 'Total',
-        data: [12, 19, 15, 22, 18, 10, 8],
-        smooth: true
+        data: data.map(item => item.repairCount),
+        smooth: true,
+        itemStyle: { color: '#409EFF' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
+            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+          ])
+        }
       },
       {
         name: '校准任务',
         type: 'line',
-        stack: 'Total',
-        data: [5, 8, 6, 10, 7, 4, 3],
-        smooth: true
+        data: data.map(item => item.calibrationCount),
+        smooth: true,
+        itemStyle: { color: '#67C23A' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(103, 194, 58, 0.3)' },
+            { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
+          ])
+        }
       }
-    ]
+    ] : [],
+    ...(!hasData ? getEmptyOption() : {})
+  }
+
+  chart.setOption(option)
+
+  const resizeObserver = new ResizeObserver(() => {
+    chart.resize()
   })
+  resizeObserver.observe(trendChartRef.value)
+}
+
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const [overviewRes, dashboardRes] = await Promise.all([
+      getOverview(),
+      getDashboard()
+    ])
+
+    const overviewData = overviewRes.data || overviewRes
+    const dashboardData = dashboardRes.data || dashboardRes
+
+    stats.value = {
+      totalDevices: overviewData.totalDevices ?? 0,
+      runningCount: overviewData.runningCount ?? 0,
+      repairCount: overviewData.repairCount ?? 0,
+      calibrationCount: overviewData.calibrationCount ?? 0
+    }
+
+    await nextTick()
+
+    initStatusChart(dashboardData.deviceStatusDistribution || [])
+    initTrendChart((dashboardData.monthlyTrend || []).slice(-6))
+  } catch (error) {
+    console.error('获取仪表盘数据失败:', error)
+    ElMessage.error(error.message || '获取数据失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
-  initStatusChart()
-  initTrendChart()
+  fetchData()
 })
 </script>
 

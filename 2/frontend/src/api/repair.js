@@ -63,6 +63,13 @@ export function acceptOrder(id, qcStatus) {
   })
 }
 
+export function cancelOrder(id) {
+  return request({
+    url: `/repair-orders/${id}/cancel`,
+    method: 'put'
+  })
+}
+
 export function getRepairStatistics() {
   return request({
     url: '/repair-orders/statistics',

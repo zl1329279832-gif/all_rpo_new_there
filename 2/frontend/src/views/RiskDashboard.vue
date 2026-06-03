@@ -60,12 +60,18 @@
         <el-card class="chart-card">
           <template #header>风险等级分布</template>
           <div ref="riskChartRef" class="chart"></div>
+          <div v-if="!hasRiskData" class="empty-chart-tip">
+            <el-empty description="暂无数据" :image-size="60" />
+          </div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card class="chart-card">
           <template #header>设备状态统计</template>
           <div ref="statusChartRef" class="chart"></div>
+          <div v-if="!hasStatusData" class="empty-chart-tip">
+            <el-empty description="暂无数据" :image-size="60" />
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -84,11 +90,14 @@
         </div>
       </template>
 
-      <el-table :data="highRiskDevices" v-loading="loading" border stripe>
-        <el-table-column prop="name" label="设备名称" min-width="120" />
-        <el-table-column prop="code" label="设备编号" min-width="120" />
-        <el-table-column prop="model" label="型号" min-width="100" />
-        <el-table-column prop="departmentName" label="所属科室" min-width="100" />
+      <el-table :data="highRiskDevices" v-loading="tableLoading" border stripe>
+        <template #empty>
+          <el-empty description="暂无高风险设备" />
+        </template>
+        <el-table-column prop="deviceName" label="设备名称" min-width="120" />
+        <el-table-column prop="deviceCode" label="设备编号" min-width="120" />
+        <el-table-column prop="deviceModel" label="型号" min-width="100" />
+        <el-table-column prop="deptName" label="所属科室" min-width="100" />
         <el-table-column prop="riskLevel" label="风险等级" min-width="100">
           <template #default="{ row }">
             <el-tag type="danger" effect="dark">{{ getRiskText(row.riskLevel) }}</el-tag>
@@ -111,8 +120,8 @@
         :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="fetchData"
-        @current-change="fetchData"
+        @size-change="fetchHighRiskDevices"
+        @current-change="fetchHighRiskDevices"
         class="pagination"
       />
     </el-card>
@@ -158,11 +167,11 @@
 
     <el-dialog v-model="detailVisible" title="设备风险详情" width="600px">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="设备名称">{{ currentDevice.name }}</el-descriptions-item>
-        <el-descriptions-item label="设备编号">{{ currentDevice.code }}</el-descriptions-item>
-        <el-descriptions-item label="型号">{{ currentDevice.model }}</el-descriptions-item>
+        <el-descriptions-item label="设备名称">{{ currentDevice.deviceName }}</el-descriptions-item>
+        <el-descriptions-item label="设备编号">{{ currentDevice.deviceCode }}</el-descriptions-item>
+        <el-descriptions-item label="型号">{{ currentDevice.deviceModel }}</el-descriptions-item>
         <el-descriptions-item label="生产厂家">{{ currentDevice.manufacturer }}</el-descriptions-item>
-        <el-descriptions-item label="所属科室">{{ currentDevice.departmentName }}</el-descriptions-item>
+        <el-descriptions-item label="所属科室">{{ currentDevice.deptName }}</el-descriptions-item>
         <el-descriptions-item label="风险等级">
           <el-tag type="danger" effect="dark">{{ getRiskText(currentDevice.riskLevel) }}</el-tag>
         </el-descriptions-item>
@@ -179,47 +188,112 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Warning, InfoFilled, CircleCheck, Monitor, Download } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
+import { getOverview, getDashboard } from '@/api/statistics'
+import { getDevicePage } from '@/api/device'
+
+const STORAGE_KEY = 'risk_dashboard_state'
+
+const hasData = (data) => {
+  if (!data) return false
+  if (Array.isArray(data)) return data.length > 0
+  if (typeof data === 'object') return Object.keys(data).length > 0
+  return !!data
+}
+
+const getEmptyOption = () => ({
+  graphic: {
+    type: 'text',
+    left: 'center',
+    top: 'middle',
+    style: {
+      text: '暂无数据',
+      fontSize: 16,
+      fill: '#999'
+    }
+  }
+})
 
 const loading = ref(false)
+const tableLoading = ref(false)
 const submitting = ref(false)
 const riskChartRef = ref(null)
 const statusChartRef = ref(null)
 const inspectionDialogVisible = ref(false)
 const detailVisible = ref(false)
 const inspectionFormRef = ref(null)
+let riskChart = null
+let statusChart = null
+
+const loadStateFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (e) {
+    console.error('Failed to load state from localStorage:', e)
+  }
+  return null
+}
+
+const savedState = loadStateFromStorage()
 
 const pagination = reactive({
-  pageNum: 1,
-  pageSize: 10,
+  pageNum: savedState?.pagination?.pageNum ?? 1,
+  pageSize: savedState?.pagination?.pageSize ?? 10,
   total: 0
 })
 
+const saveStateToStorage = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      pagination: { pageNum: pagination.pageNum, pageSize: pagination.pageSize }
+    }))
+  } catch (e) {
+    console.error('Failed to save state to localStorage:', e)
+  }
+}
+
+watch(
+  () => [pagination.pageNum, pagination.pageSize],
+  () => {
+    saveStateToStorage()
+  }
+)
+
 const highRiskDevices = ref([])
 
-const stats = computed(() => {
-  const high = highRiskDevices.value.length
-  const medium = 15
-  const low = 35
-  const total = high + medium + low
-  return {
-    highRiskCount: high,
-    mediumRiskCount: medium,
-    lowRiskCount: low,
-    totalCount: total
-  }
+const stats = reactive({
+  highRiskCount: 0,
+  mediumRiskCount: 0,
+  lowRiskCount: 0,
+  totalCount: 0
+})
+
+const riskLevelDistribution = ref(null)
+const deptDeviceDistribution = ref(null)
+
+const hasRiskData = computed(() => {
+  if (!riskLevelDistribution.value) return false
+  const { highRisk, mediumRisk, lowRisk } = riskLevelDistribution.value
+  return (highRisk || 0) + (mediumRisk || 0) + (lowRisk || 0) > 0
+})
+
+const hasStatusData = computed(() => {
+  return deptDeviceDistribution.value && deptDeviceDistribution.value.length > 0
 })
 
 const currentDevice = reactive({
-  name: '',
-  code: '',
-  model: '',
+  deviceName: '',
+  deviceCode: '',
+  deviceModel: '',
   manufacturer: '',
-  departmentName: '',
-  riskLevel: '',
+  deptName: '',
+  riskLevel: null,
   purchaseDate: '',
   serviceYears: '',
   riskReason: '',
@@ -246,18 +320,33 @@ const inspectionFormRules = {
 
 const getRiskText = (level) => {
   const map = {
-    HIGH: '高风险',
-    MEDIUM: '中风险',
-    LOW: '低风险'
+    3: '高风险',
+    2: '中风险',
+    1: '低风险'
   }
-  return map[level] || level
+  return map[level] || '未知'
 }
 
 const initRiskChart = () => {
   if (!riskChartRef.value) return
   nextTick(() => {
-    const chart = echarts.init(riskChartRef.value)
-    chart.setOption({
+    if (!riskChart) {
+      riskChart = echarts.init(riskChartRef.value)
+    }
+    const data = riskLevelDistribution.value || { highRisk: 0, mediumRisk: 0, lowRisk: 0 }
+    const hasChartData = data && (data.highRisk > 0 || data.mediumRisk > 0 || data.lowRisk > 0)
+    
+    if (!hasChartData) {
+      riskChart.setOption(getEmptyOption())
+      return
+    }
+    
+    const chartData = [
+      { value: data.highRisk || 0, name: '高风险', itemStyle: { color: '#F56C6C' } },
+      { value: data.mediumRisk || 0, name: '中风险', itemStyle: { color: '#E6A23C' } },
+      { value: data.lowRisk || 0, name: '低风险', itemStyle: { color: '#67C23A' } }
+    ]
+    riskChart.setOption({
       tooltip: {
         trigger: 'item'
       },
@@ -290,11 +379,7 @@ const initRiskChart = () => {
           labelLine: {
             show: false
           },
-          data: [
-            { value: stats.value.highRiskCount, name: '高风险', itemStyle: { color: '#F56C6C' } },
-            { value: stats.value.mediumRiskCount, name: '中风险', itemStyle: { color: '#E6A23C' } },
-            { value: stats.value.lowRiskCount, name: '低风险', itemStyle: { color: '#67C23A' } }
-          ]
+          data: chartData
         }
       ]
     })
@@ -304,8 +389,23 @@ const initRiskChart = () => {
 const initStatusChart = () => {
   if (!statusChartRef.value) return
   nextTick(() => {
-    const chart = echarts.init(statusChartRef.value)
-    chart.setOption({
+    if (!statusChart) {
+      statusChart = echarts.init(statusChartRef.value)
+    }
+    const deptData = deptDeviceDistribution.value || []
+    const hasChartData = deptData && deptData.length > 0
+    
+    if (!hasChartData) {
+      statusChart.setOption(getEmptyOption())
+      return
+    }
+    
+    const deptNames = deptData.map(item => item.deptName || item.name || '未知科室')
+    const highRiskData = deptData.map(item => item.highRisk || item.highRiskCount || 0)
+    const mediumRiskData = deptData.map(item => item.mediumRisk || item.mediumRiskCount || 0)
+    const lowRiskData = deptData.map(item => item.lowRisk || item.lowRiskCount || 0)
+    
+    statusChart.setOption({
       tooltip: {
         trigger: 'axis',
         axisPointer: {
@@ -324,7 +424,7 @@ const initStatusChart = () => {
       },
       xAxis: {
         type: 'category',
-        data: ['内科', '外科', '急诊科', '放射科', '检验科']
+        data: deptNames
       },
       yAxis: {
         type: 'value'
@@ -335,43 +435,85 @@ const initStatusChart = () => {
           type: 'bar',
           stack: 'total',
           itemStyle: { color: '#F56C6C' },
-          data: [3, 2, 4, 5, 2]
+          data: highRiskData
         },
         {
           name: '中风险',
           type: 'bar',
           stack: 'total',
           itemStyle: { color: '#E6A23C' },
-          data: [5, 4, 3, 2, 1]
+          data: mediumRiskData
         },
         {
           name: '低风险',
           type: 'bar',
           stack: 'total',
           itemStyle: { color: '#67C23A' },
-          data: [10, 8, 12, 5, 0]
+          data: lowRiskData
         }
       ]
     })
   })
 }
 
-const fetchData = async () => {
+const fetchDashboardData = async () => {
   loading.value = true
   try {
-    highRiskDevices.value = [
-      { id: 1, name: 'CT扫描仪', code: 'CT-001', model: 'SOMATOM Force', departmentName: '放射科', riskLevel: 'HIGH', riskReason: '设备使用年限超过8年，多次出现图像伪影', lastInspectionDate: '2026-05-15', nextInspectionDate: '2026-06-15', manufacturer: '西门子', purchaseDate: '2018-03-10', serviceYears: 8, riskAssessment: '设备老化严重，存在故障停机风险，可能影响临床诊断', suggestion: '建议立即安排全面检修，评估更换必要性' },
-      { id: 2, name: '核磁共振仪', code: 'MRI-001', model: 'Achieva 3.0T', departmentName: '放射科', riskLevel: 'HIGH', riskReason: '磁场均匀性不达标，影响诊断准确性', lastInspectionDate: '2026-05-20', nextInspectionDate: '2026-06-20', manufacturer: '飞利浦', purchaseDate: '2017-08-20', serviceYears: 9, riskAssessment: '磁场偏差可能导致误诊，属于严重质量问题', suggestion: '需立即联系厂家进行专业校准' },
-      { id: 3, name: 'X光机', code: 'XR-003', model: 'DRX-Evolution', departmentName: '急诊科', riskLevel: 'HIGH', riskReason: '曝光剂量不稳定，存在安全隐患', lastInspectionDate: '2026-05-25', nextInspectionDate: '2026-06-25', manufacturer: '柯达', purchaseDate: '2019-01-05', serviceYears: 7, riskAssessment: '剂量超标可能对患者和操作人员造成伤害', suggestion: '暂停使用，立即检修高压发生器' },
-      { id: 4, name: '麻醉机', code: 'AM-002', model: 'Aespire 7900', departmentName: '外科', riskLevel: 'HIGH', riskReason: '呼吸回路漏气检测失败', lastInspectionDate: '2026-05-28', nextInspectionDate: '2026-06-28', manufacturer: 'GE医疗', purchaseDate: '2018-11-15', serviceYears: 8, riskAssessment: '手术中漏气可能导致患者缺氧，属于高危问题', suggestion: '立即更换呼吸回路组件，进行压力测试' },
-      { id: 5, name: '呼吸机', code: 'VM-005', model: 'Servo-i', departmentName: 'ICU', riskLevel: 'HIGH', riskReason: '潮气量校准偏差超过10%', lastInspectionDate: '2026-05-30', nextInspectionDate: '2026-06-30', manufacturer: '迈瑞', purchaseDate: '2020-06-10', serviceYears: 6, riskAssessment: '潮气量不准确可能导致通气不足或过度通气', suggestion: '进行流量传感器校准和系统测试' }
-    ]
-    pagination.total = 5
+    const [overviewRes, dashboardRes] = await Promise.all([
+      getOverview(),
+      getDashboard()
+    ])
+    
+    const overviewData = overviewRes.data || overviewRes
+    const dashboardData = dashboardRes.data || dashboardRes
+    
+    stats.highRiskCount = overviewData.highRiskCount || 0
+    stats.totalCount = overviewData.totalDevices || overviewData.totalCount || 0
+    
+    riskLevelDistribution.value = dashboardData.riskLevelDistribution || null
+    deptDeviceDistribution.value = dashboardData.deptDeviceDistribution || null
+    
+    if (riskLevelDistribution.value) {
+      stats.mediumRiskCount = riskLevelDistribution.value.mediumRisk || riskLevelDistribution.value.mediumRiskCount || 0
+      stats.lowRiskCount = riskLevelDistribution.value.lowRisk || riskLevelDistribution.value.lowRiskCount || 0
+    }
+    
     initRiskChart()
     initStatusChart()
+  } catch (error) {
+    console.error('获取仪表板数据失败:', error)
+    ElMessage.error('获取仪表板数据失败，请稍后重试')
   } finally {
     loading.value = false
   }
+}
+
+const fetchHighRiskDevices = async () => {
+  tableLoading.value = true
+  try {
+    const params = {
+      pageNum: pagination.pageNum,
+      pageSize: pagination.pageSize,
+      riskLevel: 3
+    }
+    const res = await getDevicePage(params)
+    const data = res.data || res
+    highRiskDevices.value = data.records || data.list || data.rows || []
+    pagination.total = data.total || 0
+    saveStateToStorage()
+  } catch (error) {
+    console.error('获取高风险设备列表失败:', error)
+    ElMessage.error('获取高风险设备列表失败，请稍后重试')
+    highRiskDevices.value = []
+    pagination.total = 0
+  } finally {
+    tableLoading.value = false
+  }
+}
+
+const fetchData = () => {
+  fetchDashboardData()
+  fetchHighRiskDevices()
 }
 
 const handleExport = () => {
@@ -387,7 +529,7 @@ const handleView = (row) => {
 
 const handleScheduleInspection = (row) => {
   inspectionForm.deviceId = row.id
-  inspectionForm.deviceName = row.name
+  inspectionForm.deviceName = row.deviceName
   inspectionForm.inspectionType = 'URGENT'
   inspectionForm.plannedDate = ''
   inspectionForm.inspector = ''
@@ -412,8 +554,22 @@ const handleSubmitInspection = async () => {
   })
 }
 
+const handleResize = () => {
+  riskChart && riskChart.resize()
+  statusChart && statusChart.resize()
+}
+
 onMounted(() => {
   fetchData()
+  window.addEventListener('resize', handleResize)
+})
+
+watch(hasRiskData, () => {
+  initRiskChart()
+})
+
+watch(hasStatusData, () => {
+  initStatusChart()
 })
 </script>
 
@@ -491,11 +647,20 @@ onMounted(() => {
 
 .chart-card {
   height: 350px;
+  position: relative;
 }
 
 .chart {
   width: 100%;
   height: 280px;
+}
+
+.empty-chart-tip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
 }
 
 .table-card {

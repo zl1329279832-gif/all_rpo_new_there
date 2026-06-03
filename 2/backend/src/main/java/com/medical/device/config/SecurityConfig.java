@@ -36,9 +36,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/login", "/auth/register").permitAll()
-                .requestMatchers("/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
-                .requestMatchers("/favicon.ico", "/error").permitAll()
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/doc.html", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                .requestMatchers("/webjars/**", "/favicon.ico").permitAll()
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
