@@ -55,6 +55,14 @@ export function executeTask(id, checkResult, abnormalDesc, handleSuggestion) {
   })
 }
 
+export function listTasks(params) {
+  return request({
+    url: '/inspection/tasks',
+    method: 'get',
+    params
+  })
+}
+
 export function getInspectionStatistics() {
   return request({
     url: '/inspection/statistics',

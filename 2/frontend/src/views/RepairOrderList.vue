@@ -9,7 +9,7 @@
             <el-option label="维修中" :value="3" />
             <el-option label="待验收" :value="4" />
             <el-option label="已完成" :value="5" />
-            <el-option label="已取消" :value="0" />
+            <el-option label="已取消" :value="6" />
           </el-select>
         </el-form-item>
         <el-form-item label="设备名称">
@@ -40,10 +40,13 @@
       </template>
 
       <el-table :data="tableData" v-loading="loading" border stripe>
-        <el-table-column prop="orderNo" label="工单编号" min-width="140" />
+        <template #empty>
+          <el-empty description="暂无数据" />
+        </template>
+        <el-table-column prop="orderCode" label="工单编号" min-width="140" />
         <el-table-column prop="deviceName" label="设备名称" min-width="120" />
-        <el-table-column prop="faultType" label="故障类型" min-width="100">
-          <template #default="{ row }">{{ getFaultTypeText(row.faultType) }}</template>
+        <el-table-column prop="faultLevel" label="故障等级" min-width="100">
+          <template #default="{ row }">{{ getFaultLevelText(row.faultLevel) }}</template>
         </el-table-column>
         <el-table-column prop="faultDescription" label="故障描述" min-width="150" show-overflow-tooltip />
         <el-table-column prop="reporterName" label="报修人" min-width="100" />
@@ -52,7 +55,7 @@
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="reportTime" label="创建时间" min-width="160" />
+        <el-table-column prop="createTime" label="创建时间" min-width="160" />
         <el-table-column label="操作" fixed="right" width="280">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleView(row)">详情</el-button>
@@ -107,23 +110,15 @@
             <el-option v-for="device in deviceList" :key="device.id" :label="`${device.name} (${device.code})`" :value="device.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="故障类型" prop="faultType">
-          <el-select v-model="createForm.faultType" placeholder="请选择故障类型" style="width: 100%">
-            <el-option label="机械故障" :value="1" />
-            <el-option label="电路故障" :value="2" />
-            <el-option label="软件故障" :value="3" />
-            <el-option label="其他故障" :value="4" />
+        <el-form-item label="故障等级" prop="faultLevel">
+          <el-select v-model="createForm.faultLevel" placeholder="请选择故障等级" style="width: 100%">
+            <el-option label="低" :value="1" />
+            <el-option label="中" :value="2" />
+            <el-option label="高" :value="3" />
           </el-select>
         </el-form-item>
         <el-form-item label="故障描述" prop="faultDescription">
           <el-input v-model="createForm.faultDescription" type="textarea" :rows="4" placeholder="请详细描述故障情况" />
-        </el-form-item>
-        <el-form-item label="紧急程度" prop="faultLevel">
-          <el-radio-group v-model="createForm.faultLevel">
-            <el-radio :label="1">低</el-radio>
-            <el-radio :label="2">中</el-radio>
-            <el-radio :label="3">高</el-radio>
-          </el-radio-group>
         </el-form-item>
         <el-form-item label="报修人" prop="reporterName">
           <el-input v-model="createForm.reporterName" placeholder="请输入报修人姓名" />
@@ -176,17 +171,16 @@
 
     <el-dialog v-model="detailDialogVisible" title="工单详情" width="700px">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="工单编号">{{ currentOrder.orderNo }}</el-descriptions-item>
+        <el-descriptions-item label="工单编号">{{ currentOrder.orderCode }}</el-descriptions-item>
         <el-descriptions-item label="设备名称">{{ currentOrder.deviceName }}</el-descriptions-item>
-        <el-descriptions-item label="故障类型">{{ getFaultTypeText(currentOrder.faultType) }}</el-descriptions-item>
-        <el-descriptions-item label="紧急程度">{{ getPriorityText(currentOrder.faultLevel) }}</el-descriptions-item>
+        <el-descriptions-item label="故障等级">{{ getFaultLevelText(currentOrder.faultLevel) }}</el-descriptions-item>
         <el-descriptions-item label="当前状态">
           <el-tag :type="getStatusType(currentOrder.status)">{{ getStatusText(currentOrder.status) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="报修人">{{ currentOrder.reporterName }}</el-descriptions-item>
         <el-descriptions-item label="联系电话">{{ currentOrder.reporterPhone }}</el-descriptions-item>
         <el-descriptions-item label="维修人员">{{ currentOrder.repairerName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ currentOrder.reportTime }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ currentOrder.createTime }}</el-descriptions-item>
         <el-descriptions-item label="完成时间">{{ currentOrder.completeTime || '-' }}</el-descriptions-item>
         <el-descriptions-item label="故障描述" :span="2">{{ currentOrder.faultDescription }}</el-descriptions-item>
         <el-descriptions-item label="维修内容" :span="2">{{ currentOrder.repairContent || '-' }}</el-descriptions-item>
@@ -197,11 +191,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus } from '@element-plus/icons-vue'
+import { debounce } from 'lodash'
 import { getRepairOrderPage, createRepairOrder, assignOrder, startRepair, completeRepair, acceptOrder } from '@/api/repair'
 import { getDeviceList } from '@/api/device'
+import { getUsersByRole } from '@/api/user'
+
+const STORAGE_KEY = 'repair_order_list_state'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -213,31 +211,52 @@ const createFormRef = ref(null)
 const dispatchFormRef = ref(null)
 const completeFormRef = ref(null)
 
+const loadStateFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (e) {
+    console.error('Failed to load state from localStorage:', e)
+  }
+  return null
+}
+
+const savedState = loadStateFromStorage()
+
 const filterForm = reactive({
-  status: null,
-  keyword: ''
+  status: savedState?.filterForm?.status ?? null,
+  keyword: savedState?.filterForm?.keyword ?? ''
 })
 
 const pagination = reactive({
-  pageNum: 1,
-  pageSize: 10,
+  pageNum: savedState?.pagination?.pageNum ?? 1,
+  pageSize: savedState?.pagination?.pageSize ?? 10,
   total: 0
 })
 
+const saveStateToStorage = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      filterForm: { ...filterForm },
+      pagination: { pageNum: pagination.pageNum, pageSize: pagination.pageSize }
+    }))
+  } catch (e) {
+    console.error('Failed to save state to localStorage:', e)
+  }
+}
+
 const tableData = ref([])
 const deviceList = ref([])
-const engineerList = ref([
-  { id: 3, realName: '维修工程师1' },
-  { id: 4, realName: '维修工程师2' }
-])
+const engineerList = ref([])
 
 const currentOrderId = ref(null)
 
 const createForm = reactive({
   deviceId: null,
-  faultType: null,
-  faultDescription: '',
   faultLevel: 2,
+  faultDescription: '',
   reporterName: '',
   reporterPhone: ''
 })
@@ -253,16 +272,15 @@ const completeForm = reactive({
 })
 
 const currentOrder = reactive({
-  orderNo: '',
+  orderCode: '',
   deviceName: '',
-  faultType: null,
-  faultDescription: '',
   faultLevel: null,
+  faultDescription: '',
   reporterName: '',
   reporterPhone: '',
   repairerName: '',
   status: null,
-  reportTime: '',
+  createTime: '',
   completeTime: '',
   repairContent: '',
   repairResult: ''
@@ -270,7 +288,7 @@ const currentOrder = reactive({
 
 const createFormRules = {
   deviceId: [{ required: true, message: '请选择设备', trigger: 'change' }],
-  faultType: [{ required: true, message: '请选择故障类型', trigger: 'change' }],
+  faultLevel: [{ required: true, message: '请选择故障等级', trigger: 'change' }],
   faultDescription: [{ required: true, message: '请输入故障描述', trigger: 'blur' }],
   reporterName: [{ required: true, message: '请输入报修人', trigger: 'blur' }]
 }
@@ -285,31 +303,43 @@ const completeFormRules = {
 }
 
 const getStatusType = (status) => {
-  const map = { 1: 'info', 2: 'primary', 3: 'warning', 4: 'warning', 5: 'success', 0: 'danger' }
+  const map = { 1: 'info', 2: 'primary', 3: 'warning', 4: 'warning', 5: 'success', 6: 'danger' }
   return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const map = { 1: '待派单', 2: '已派单', 3: '维修中', 4: '待验收', 5: '已完成', 0: '已取消' }
+  const map = { 1: '待派单', 2: '已派单', 3: '维修中', 4: '待验收', 5: '已完成', 6: '已取消' }
   return map[status] || '未知'
 }
 
-const getFaultTypeText = (type) => {
-  const map = { 1: '机械故障', 2: '电路故障', 3: '软件故障', 4: '其他故障' }
-  return map[type] || '未知'
-}
-
-const getPriorityText = (priority) => {
+const getFaultLevelText = (level) => {
   const map = { 1: '低', 2: '中', 3: '高' }
-  return map[priority] || '未知'
+  return map[level] || '未知'
 }
 
 const fetchDevices = async () => {
+  loading.value = true
   try {
     const res = await getDeviceList({ pageNum: 1, pageSize: 100 })
     deviceList.value = res.data?.records || []
   } catch (error) {
     console.error('获取设备列表失败', error)
+    ElMessage.error('获取设备列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchEngineers = async () => {
+  loading.value = true
+  try {
+    const res = await getUsersByRole('ENGINEER')
+    engineerList.value = res.data || []
+  } catch (error) {
+    console.error('获取工程师列表失败', error)
+    ElMessage.error('获取工程师列表失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -324,12 +354,20 @@ const fetchData = async () => {
     const res = await getRepairOrderPage(params)
     tableData.value = res.data?.records || []
     pagination.total = res.data?.total || 0
+    saveStateToStorage()
   } catch (error) {
     ElMessage.error('获取数据失败')
+    tableData.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
 }
+
+const debouncedSearch = debounce(() => {
+  pagination.pageNum = 1
+  fetchData()
+}, 300)
 
 const handleSearch = () => {
   pagination.pageNum = 1
@@ -342,11 +380,28 @@ const handleReset = () => {
   handleSearch()
 }
 
+watch(
+  () => filterForm.keyword,
+  () => {
+    debouncedSearch()
+  }
+)
+
+watch(
+  () => [pagination.pageNum, pagination.pageSize],
+  () => {
+    saveStateToStorage()
+  }
+)
+
+onUnmounted(() => {
+  debouncedSearch.cancel()
+})
+
 const handleCreate = () => {
   createForm.deviceId = null
-  createForm.faultType = null
-  createForm.faultDescription = ''
   createForm.faultLevel = 2
+  createForm.faultDescription = ''
   createForm.reporterName = ''
   createForm.reporterPhone = ''
   createDialogVisible.value = true
@@ -359,7 +414,10 @@ const handleSubmitCreate = async () => {
       submitting.value = true
       try {
         await createRepairOrder(createForm)
-        ElMessage.success('工单创建成功')
+        ElMessage.success({
+          message: '工单创建成功，列表已刷新',
+          type: 'success'
+        })
         createDialogVisible.value = false
         fetchData()
       } catch (error) {
@@ -391,7 +449,10 @@ const handleSubmitDispatch = async () => {
       try {
         const engineer = engineerList.value.find(e => e.id === dispatchForm.repairerId)
         await assignOrder(currentOrderId.value, dispatchForm.repairerId, engineer?.realName || '')
-        ElMessage.success('派单成功')
+        ElMessage.success({
+          message: '派单成功，列表已刷新',
+          type: 'success'
+        })
         dispatchDialogVisible.value = false
         fetchData()
       } catch (error) {
@@ -412,7 +473,10 @@ const handleStartRepair = async (row) => {
     })
     await startRepair(row.id)
     row.status = 3
-    ElMessage.success('已开始维修')
+    ElMessage.success({
+      message: '已开始维修，列表已刷新',
+      type: 'success'
+    })
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -435,7 +499,10 @@ const handleSubmitComplete = async () => {
       submitting.value = true
       try {
         await completeRepair(currentOrderId.value, completeForm.repairContent, completeForm.repairResult, [])
-        ElMessage.success('维修完成，等待验收')
+        ElMessage.success({
+          message: '维修完成，等待验收，列表已刷新',
+          type: 'success'
+        })
         completeDialogVisible.value = false
         fetchData()
       } catch (error) {
@@ -457,7 +524,10 @@ const handleAccept = async (row) => {
     await acceptOrder(row.id, 1)
     row.status = 5
     row.completeTime = new Date().toLocaleString()
-    ElMessage.success('验收通过')
+    ElMessage.success({
+      message: '验收通过，列表已刷新',
+      type: 'success'
+    })
     fetchData()
   } catch (error) {
     if (error !== 'cancel') {
@@ -468,6 +538,7 @@ const handleAccept = async (row) => {
 
 onMounted(() => {
   fetchDevices()
+  fetchEngineers()
   fetchData()
 })
 </script>

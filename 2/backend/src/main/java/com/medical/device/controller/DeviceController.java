@@ -2,10 +2,12 @@ package com.medical.device.controller;
 
 import com.medical.device.common.PageResult;
 import com.medical.device.common.Result;
+import com.medical.device.dto.DeviceQueryDTO;
 import com.medical.device.entity.Device;
 import com.medical.device.service.DeviceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,14 +25,14 @@ public class DeviceController {
 
     @Operation(summary = "分页查询设备列表")
     @GetMapping
-    public Result<PageResult<Device>> listDevices(
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) Integer riskLevel,
-            @RequestParam(required = false) Long deptId) {
-        PageResult<Device> result = deviceService.listDevices(pageNum, pageSize, keyword, status, riskLevel, deptId);
+    public Result<PageResult<Device>> listDevices(@Valid @ModelAttribute DeviceQueryDTO queryDTO) {
+        PageResult<Device> result = deviceService.listDevices(
+                queryDTO.getPageNum(),
+                queryDTO.getPageSize(),
+                queryDTO.getKeyword(),
+                queryDTO.getStatus(),
+                queryDTO.getRiskLevel(),
+                queryDTO.getDeptId());
         return Result.success(result);
     }
 

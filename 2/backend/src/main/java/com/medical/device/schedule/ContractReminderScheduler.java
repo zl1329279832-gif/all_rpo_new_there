@@ -39,7 +39,7 @@ public class ContractReminderScheduler {
                 continue;
             }
 
-            long daysUntilExpiry = LocalDate.now().until(contract.getEndDate()).getDays();
+            long daysUntilExpiry = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), contract.getEndDate());
             log.warn("合同即将到期: {}, 剩余 {} 天", contract.getContractName(), daysUntilExpiry);
 
             if (daysUntilExpiry <= 7) {
