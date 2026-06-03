@@ -25,7 +25,7 @@ import java.util.Map;
 
 @Api(tags = "入库管理接口")
 @RestController
-@RequestMapping("/api/receipt")
+@RequestMapping("/receipt")
 public class ReceiptOrderController {
 
     @Autowired

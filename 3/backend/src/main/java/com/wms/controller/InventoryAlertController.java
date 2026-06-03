@@ -18,7 +18,7 @@ import java.util.Map;
 
 @Api(tags = "库存预警接口")
 @RestController
-@RequestMapping("/api/alert")
+@RequestMapping("/alert")
 public class InventoryAlertController {
 
     @Autowired

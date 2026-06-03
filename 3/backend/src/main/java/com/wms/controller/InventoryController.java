@@ -19,7 +19,7 @@ import java.util.List;
 
 @Api(tags = "库存管理接口")
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/inventory")
 public class InventoryController {
 
     @Autowired

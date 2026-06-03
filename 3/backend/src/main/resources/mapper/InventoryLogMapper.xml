@@ -115,7 +115,6 @@
             <if test="businessNo != null and businessNo != ''">AND il.business_no LIKE CONCAT('%', #{businessNo}, '%')</if>
         </where>
         ORDER BY il.operation_time DESC
-        LIMIT #{query.pageNum}, #{query.pageSize}
     </select>
 
     <select id="selectByBusinessNo" parameterType="java.lang.String" resultMap="BaseResultMap">

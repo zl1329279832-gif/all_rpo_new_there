@@ -75,4 +75,7 @@ public interface InventoryBatchMapper {
 
     @Select("SELECT COUNT(*) FROM wms_inventory_batch")
     int selectCount();
+
+    @Select("SELECT COALESCE(SUM(quantity), 0) FROM wms_inventory_batch")
+    BigDecimal selectTotalQuantity();
 }

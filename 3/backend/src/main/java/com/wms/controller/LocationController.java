@@ -16,7 +16,7 @@ import java.util.List;
 
 @Api(tags = "库位管理接口")
 @RestController
-@RequestMapping("/api/location")
+@RequestMapping("/location")
 public class LocationController {
 
     @Autowired

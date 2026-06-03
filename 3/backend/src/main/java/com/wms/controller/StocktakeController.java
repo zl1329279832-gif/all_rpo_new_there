@@ -21,7 +21,7 @@ import java.util.Map;
 
 @Api(tags = "盘点管理接口")
 @RestController
-@RequestMapping("/api/stocktake")
+@RequestMapping("/stocktake")
 public class StocktakeController {
 
     @Autowired

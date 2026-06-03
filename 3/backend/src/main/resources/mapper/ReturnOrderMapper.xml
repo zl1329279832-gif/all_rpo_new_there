@@ -150,7 +150,6 @@
             <if test="originalShipmentNo != null and originalShipmentNo != ''">AND ro.original_shipment_no LIKE CONCAT('%', #{originalShipmentNo}, '%')</if>
         </where>
         ORDER BY ro.create_time DESC
-        LIMIT #{query.pageNum}, #{query.pageSize}
     </select>
 
     <insert id="insertDetail" parameterType="com.wms.entity.ReturnOrderDetail" useGeneratedKeys="true" keyProperty="id">

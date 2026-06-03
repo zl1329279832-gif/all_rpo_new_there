@@ -156,7 +156,6 @@
             <if test="productId != null">AND ia.product_id = #{productId}</if>
         </where>
         ORDER BY ia.alert_time DESC
-        LIMIT #{query.pageNum}, #{query.pageSize}
     </select>
 
     <select id="countPending" resultType="java.lang.Integer">

@@ -190,7 +190,6 @@
             <if test="endTime != null">AND ro.create_time &lt;= #{endTime}</if>
         </where>
         ORDER BY ro.create_time DESC
-        LIMIT #{query.pageNum}, #{query.pageSize}
     </select>
 
     <insert id="insertDetail" parameterType="com.wms.entity.ReceiptOrderDetail" useGeneratedKeys="true" keyProperty="id">
