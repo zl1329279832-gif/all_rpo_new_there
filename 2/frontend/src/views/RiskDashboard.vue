@@ -59,17 +59,17 @@
       <el-col :span="12">
         <el-card class="chart-card">
           <template #header>风险等级分布</template>
-          <div ref="riskChartRef" class="chart"></div>
-          <div v-if="!hasRiskData" class="empty-chart-tip">
+          <div v-if="hasRiskData" ref="riskChartRef" class="chart"></div>
+          <div v-else class="empty-chart-tip">
             <el-empty description="暂无数据" :image-size="60" />
           </div>
         </el-card>
       </el-col>
       <el-col :span="12">
         <el-card class="chart-card">
-          <template #header>设备状态统计</template>
-          <div ref="statusChartRef" class="chart"></div>
-          <div v-if="!hasStatusData" class="empty-chart-tip">
+          <template #header>各科室设备分布</template>
+          <div v-if="hasStatusData" ref="statusChartRef" class="chart"></div>
+          <div v-else class="empty-chart-tip">
             <el-empty description="暂无数据" :image-size="60" />
           </div>
         </el-card>
@@ -320,9 +320,9 @@ const inspectionFormRules = {
 
 const getRiskText = (level) => {
   const map = {
-    3: '高风险',
+    1: '高风险',
     2: '中风险',
-    1: '低风险'
+    3: '低风险'
   }
   return map[level] || '未知'
 }
@@ -400,10 +400,9 @@ const initStatusChart = () => {
       return
     }
     
-    const deptNames = deptData.map(item => item.deptName || item.name || '未知科室')
-    const highRiskData = deptData.map(item => item.highRisk || item.highRiskCount || 0)
-    const mediumRiskData = deptData.map(item => item.mediumRisk || item.mediumRiskCount || 0)
-    const lowRiskData = deptData.map(item => item.lowRisk || item.lowRiskCount || 0)
+    const deptNames = { 1: '放射科', 2: '超声科', 3: '急诊科', 4: '检验科', 5: '手术室', 6: 'ICU', 7: '心内科', 8: '呼吸科' }
+    const deptNamesList = deptData.map(item => deptNames[item.dept_id] || '科室' + item.dept_id)
+    const deviceCounts = deptData.map(item => Number(item.count) || 0)
     
     statusChart.setOption({
       tooltip: {
@@ -411,10 +410,6 @@ const initStatusChart = () => {
         axisPointer: {
           type: 'shadow'
         }
-      },
-      legend: {
-        data: ['高风险', '中风险', '低风险'],
-        bottom: '0%'
       },
       grid: {
         left: '3%',
@@ -424,32 +419,21 @@ const initStatusChart = () => {
       },
       xAxis: {
         type: 'category',
-        data: deptNames
+        data: deptNamesList
       },
       yAxis: {
         type: 'value'
       },
       series: [
         {
-          name: '高风险',
+          name: '设备数量',
           type: 'bar',
-          stack: 'total',
-          itemStyle: { color: '#F56C6C' },
-          data: highRiskData
-        },
-        {
-          name: '中风险',
-          type: 'bar',
-          stack: 'total',
-          itemStyle: { color: '#E6A23C' },
-          data: mediumRiskData
-        },
-        {
-          name: '低风险',
-          type: 'bar',
-          stack: 'total',
-          itemStyle: { color: '#67C23A' },
-          data: lowRiskData
+          itemStyle: { color: '#409EFF' },
+          data: deviceCounts,
+          label: {
+            show: true,
+            position: 'top'
+          }
         }
       ]
     })
@@ -470,12 +454,29 @@ const fetchDashboardData = async () => {
     stats.highRiskCount = overviewData.highRiskCount || 0
     stats.totalCount = overviewData.totalDevices || overviewData.totalCount || 0
     
-    riskLevelDistribution.value = dashboardData.riskLevelDistribution || null
-    deptDeviceDistribution.value = dashboardData.deptDeviceDistribution || null
+    const riskDist = dashboardData.riskLevelDistribution || []
+    if (Array.isArray(riskDist) && riskDist.length > 0) {
+      riskDist.forEach(item => {
+        const level = item.risk_level || item.riskLevel
+        const count = Number(item.count) || 0
+        if (level === 1) stats.highRiskCount = count
+        else if (level === 2) stats.mediumRiskCount = count
+        else if (level === 3) stats.lowRiskCount = count
+      })
+      riskLevelDistribution.value = {
+        highRisk: stats.highRiskCount,
+        mediumRisk: stats.mediumRiskCount,
+        lowRisk: stats.lowRiskCount
+      }
+    } else {
+      riskLevelDistribution.value = null
+    }
     
-    if (riskLevelDistribution.value) {
-      stats.mediumRiskCount = riskLevelDistribution.value.mediumRisk || riskLevelDistribution.value.mediumRiskCount || 0
-      stats.lowRiskCount = riskLevelDistribution.value.lowRisk || riskLevelDistribution.value.lowRiskCount || 0
+    const deptDist = dashboardData.deptDistribution || []
+    if (Array.isArray(deptDist) && deptDist.length > 0) {
+      deptDeviceDistribution.value = deptDist
+    } else {
+      deptDeviceDistribution.value = null
     }
     
     initRiskChart()
@@ -488,13 +489,20 @@ const fetchDashboardData = async () => {
   }
 }
 
+const initRiskChartAfterRender = () => {
+  nextTick(() => {
+    initRiskChart()
+    initStatusChart()
+  })
+}
+
 const fetchHighRiskDevices = async () => {
   tableLoading.value = true
   try {
     const params = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
-      riskLevel: 3
+      riskLevel: 1
     }
     const res = await getDevicePage(params)
     const data = res.data || res
@@ -565,11 +573,11 @@ onMounted(() => {
 })
 
 watch(hasRiskData, () => {
-  initRiskChart()
+  nextTick(() => { initRiskChart() })
 })
 
 watch(hasStatusData, () => {
-  initStatusChart()
+  nextTick(() => { initStatusChart() })
 })
 </script>
 
