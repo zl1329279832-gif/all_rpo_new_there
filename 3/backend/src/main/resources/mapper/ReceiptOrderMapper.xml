@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.ReceiptOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.ReceiptOrder">
+        <id column="id" property="id"/>
+        <result column="receipt_no" property="receiptNo"/>
+        <result column="receipt_type" property="receiptType"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="supplier_id" property="supplierId"/>
+        <result column="order_status" property="orderStatus"/>
+        <result column="total_quantity" property="totalQuantity"/>
+        <result column="actual_quantity" property="actualQuantity"/>
+        <result column="qualified_quantity" property="qualifiedQuantity"/>
+        <result column="unqualified_quantity" property="unqualifiedQuantity"/>
+        <result column="arrival_time" property="arrivalTime"/>
+        <result column="inspection_time" property="inspectionTime"/>
+        <result column="complete_time" property="completeTime"/>
+        <result column="source_order_no" property="sourceOrderNo"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="supplier_name" property="supplierName"/>
+        <result column="receipt_type_name" property="receiptTypeName"/>
+        <result column="order_status_name" property="orderStatusName"/>
+        <collection property="details" ofType="com.wms.entity.ReceiptOrderDetail" resultMap="DetailResultMap"/>
+    </resultMap>
+
+    <resultMap id="DetailResultMap" type="com.wms.entity.ReceiptOrderDetail">
+        <id column="detail_id" property="id"/>
+        <result column="receipt_order_id" property="receiptOrderId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="plan_quantity" property="planQuantity"/>
+        <result column="arrival_quantity" property="arrivalQuantity"/>
+        <result column="qualified_quantity" property="qualifiedQuantity"/>
+        <result column="unqualified_quantity" property="unqualifiedQuantity"/>
+        <result column="actual_quantity" property="actualQuantity"/>
+        <result column="unit" property="unit"/>
+        <result column="produce_date" property="produceDate"/>
+        <result column="expire_date" property="expireDate"/>
+        <result column="inspection_result" property="inspectionResult"/>
+        <result column="inspection_remark" property="inspectionRemark"/>
+        <result column="location_id" property="locationId"/>
+        <result column="cost_price" property="costPrice"/>
+        <result column="detail_remark" property="remark"/>
+        <result column="detail_create_time" property="createTime"/>
+        <result column="detail_update_time" property="updateTime"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="specification" property="specification"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, receipt_no, receipt_type, warehouse_id, supplier_id, order_status, total_quantity,
+        actual_quantity, qualified_quantity, unqualified_quantity, arrival_time, inspection_time,
+        complete_time, source_order_no, remark, create_time, update_time, create_by, update_by
+    </sql>
+
+    <sql id="Detail_Base_Column_List">
+        id as detail_id, receipt_order_id, product_id, batch_no, plan_quantity, arrival_quantity,
+        qualified_quantity, unqualified_quantity, actual_quantity, unit, produce_date, expire_date,
+        inspection_result, inspection_remark, location_id, cost_price, remark as detail_remark,
+        create_time as detail_create_time, update_time as detail_update_time
+    </sql>
+
+    <sql id="Query_Column_List">
+        ro.id, ro.receipt_no, ro.receipt_type, ro.warehouse_id, ro.supplier_id, ro.order_status,
+        ro.total_quantity, ro.actual_quantity, ro.qualified_quantity, ro.unqualified_quantity,
+        ro.arrival_time, ro.inspection_time, ro.complete_time, ro.source_order_no, ro.remark,
+        ro.create_time, ro.update_time, ro.create_by, ro.update_by,
+        w.warehouse_name, s.supplier_name,
+        CASE ro.receipt_type
+            WHEN 1 THEN '采购入库'
+            WHEN 2 THEN '退货入库'
+            WHEN 3 THEN '调拨入库'
+            WHEN 4 THEN '盘盈入库'
+            ELSE '未知'
+        END as receipt_type_name,
+        CASE ro.order_status
+            WHEN 1 THEN '待到货'
+            WHEN 2 THEN '已到货'
+            WHEN 3 THEN '质检中'
+            WHEN 4 THEN '质检完成'
+            WHEN 5 THEN '待入库'
+            WHEN 6 THEN '入库中'
+            WHEN 7 THEN '已完成'
+            WHEN 8 THEN '已取消'
+            ELSE '未知'
+        END as order_status_name
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.ReceiptOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_receipt_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="receiptNo != null">receipt_no,</if>
+            <if test="receiptType != null">receipt_type,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="supplierId != null">supplier_id,</if>
+            <if test="orderStatus != null">order_status,</if>
+            <if test="totalQuantity != null">total_quantity,</if>
+            <if test="actualQuantity != null">actual_quantity,</if>
+            <if test="qualifiedQuantity != null">qualified_quantity,</if>
+            <if test="unqualifiedQuantity != null">unqualified_quantity,</if>
+            <if test="arrivalTime != null">arrival_time,</if>
+            <if test="inspectionTime != null">inspection_time,</if>
+            <if test="completeTime != null">complete_time,</if>
+            <if test="sourceOrderNo != null">source_order_no,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="receiptNo != null">#{receiptNo},</if>
+            <if test="receiptType != null">#{receiptType},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="supplierId != null">#{supplierId},</if>
+            <if test="orderStatus != null">#{orderStatus},</if>
+            <if test="totalQuantity != null">#{totalQuantity},</if>
+            <if test="actualQuantity != null">#{actualQuantity},</if>
+            <if test="qualifiedQuantity != null">#{qualifiedQuantity},</if>
+            <if test="unqualifiedQuantity != null">#{unqualifiedQuantity},</if>
+            <if test="arrivalTime != null">#{arrivalTime},</if>
+            <if test="inspectionTime != null">#{inspectionTime},</if>
+            <if test="completeTime != null">#{completeTime},</if>
+            <if test="sourceOrderNo != null">#{sourceOrderNo},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.ReceiptOrder">
+        UPDATE wms_receipt_order
+        <set>
+            <if test="receiptNo != null">receipt_no = #{receiptNo},</if>
+            <if test="receiptType != null">receipt_type = #{receiptType},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="orderStatus != null">order_status = #{orderStatus},</if>
+            <if test="totalQuantity != null">total_quantity = #{totalQuantity},</if>
+            <if test="actualQuantity != null">actual_quantity = #{actualQuantity},</if>
+            <if test="qualifiedQuantity != null">qualified_quantity = #{qualifiedQuantity},</if>
+            <if test="unqualifiedQuantity != null">unqualified_quantity = #{unqualifiedQuantity},</if>
+            <if test="arrivalTime != null">arrival_time = #{arrivalTime},</if>
+            <if test="inspectionTime != null">inspection_time = #{inspectionTime},</if>
+            <if test="completeTime != null">complete_time = #{completeTime},</if>
+            <if test="sourceOrderNo != null">source_order_no = #{sourceOrderNo},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_receipt_order ro
+        LEFT JOIN wms_warehouse w ON ro.warehouse_id = w.id
+        LEFT JOIN wms_supplier s ON ro.supplier_id = s.id
+        WHERE ro.id = #{id}
+    </select>
+
+    <select id="selectByNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_receipt_order ro
+        LEFT JOIN wms_warehouse w ON ro.warehouse_id = w.id
+        LEFT JOIN wms_supplier s ON ro.supplier_id = s.id
+        WHERE ro.receipt_no = #{receiptNo}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_receipt_order ro
+        LEFT JOIN wms_warehouse w ON ro.warehouse_id = w.id
+        LEFT JOIN wms_supplier s ON ro.supplier_id = s.id
+        <where>
+            <if test="receiptType != null">AND ro.receipt_type = #{receiptType}</if>
+            <if test="orderStatus != null">AND ro.order_status = #{orderStatus}</if>
+            <if test="warehouseId != null">AND ro.warehouse_id = #{warehouseId}</if>
+            <if test="supplierId != null">AND ro.supplier_id = #{supplierId}</if>
+            <if test="startTime != null">AND ro.create_time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND ro.create_time &lt;= #{endTime}</if>
+        </where>
+        ORDER BY ro.create_time DESC
+        LIMIT #{query.pageNum}, #{query.pageSize}
+    </select>
+
+    <insert id="insertDetail" parameterType="com.wms.entity.ReceiptOrderDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_receipt_order_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="receiptOrderId != null">receipt_order_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="planQuantity != null">plan_quantity,</if>
+            <if test="arrivalQuantity != null">arrival_quantity,</if>
+            <if test="qualifiedQuantity != null">qualified_quantity,</if>
+            <if test="unqualifiedQuantity != null">unqualified_quantity,</if>
+            <if test="actualQuantity != null">actual_quantity,</if>
+            <if test="unit != null">unit,</if>
+            <if test="produceDate != null">produce_date,</if>
+            <if test="expireDate != null">expire_date,</if>
+            <if test="inspectionResult != null">inspection_result,</if>
+            <if test="inspectionRemark != null">inspection_remark,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="costPrice != null">cost_price,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="receiptOrderId != null">#{receiptOrderId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="planQuantity != null">#{planQuantity},</if>
+            <if test="arrivalQuantity != null">#{arrivalQuantity},</if>
+            <if test="qualifiedQuantity != null">#{qualifiedQuantity},</if>
+            <if test="unqualifiedQuantity != null">#{unqualifiedQuantity},</if>
+            <if test="actualQuantity != null">#{actualQuantity},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="produceDate != null">#{produceDate},</if>
+            <if test="expireDate != null">#{expireDate},</if>
+            <if test="inspectionResult != null">#{inspectionResult},</if>
+            <if test="inspectionRemark != null">#{inspectionRemark},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="costPrice != null">#{costPrice},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateDetail" parameterType="com.wms.entity.ReceiptOrderDetail">
+        UPDATE wms_receipt_order_detail
+        <set>
+            <if test="receiptOrderId != null">receipt_order_id = #{receiptOrderId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="planQuantity != null">plan_quantity = #{planQuantity},</if>
+            <if test="arrivalQuantity != null">arrival_quantity = #{arrivalQuantity},</if>
+            <if test="qualifiedQuantity != null">qualified_quantity = #{qualifiedQuantity},</if>
+            <if test="unqualifiedQuantity != null">unqualified_quantity = #{unqualifiedQuantity},</if>
+            <if test="actualQuantity != null">actual_quantity = #{actualQuantity},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="produceDate != null">produce_date = #{produceDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="inspectionResult != null">inspection_result = #{inspectionResult},</if>
+            <if test="inspectionRemark != null">inspection_remark = #{inspectionRemark},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="costPrice != null">cost_price = #{costPrice},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectDetailsByOrderId" parameterType="java.lang.Long" resultMap="DetailResultMap">
+        SELECT
+        rod.id as detail_id, rod.receipt_order_id, rod.product_id, rod.batch_no, rod.plan_quantity,
+        rod.arrival_quantity, rod.qualified_quantity, rod.unqualified_quantity, rod.actual_quantity,
+        rod.unit, rod.produce_date, rod.expire_date, rod.inspection_result, rod.inspection_remark,
+        rod.location_id, rod.cost_price, rod.remark as detail_remark,
+        rod.create_time as detail_create_time, rod.update_time as detail_update_time,
+        p.product_code, p.product_name, p.specification, l.location_code
+        FROM wms_receipt_order_detail rod
+        LEFT JOIN wms_product p ON rod.product_id = p.id
+        LEFT JOIN wms_location l ON rod.location_id = l.id
+        WHERE rod.receipt_order_id = #{orderId}
+        ORDER BY rod.id
+    </select>
+
+    <select id="selectDetailById" parameterType="java.lang.Long" resultMap="DetailResultMap">
+        SELECT
+        rod.id as detail_id, rod.receipt_order_id, rod.product_id, rod.batch_no, rod.plan_quantity,
+        rod.arrival_quantity, rod.qualified_quantity, rod.unqualified_quantity, rod.actual_quantity,
+        rod.unit, rod.produce_date, rod.expire_date, rod.inspection_result, rod.inspection_remark,
+        rod.location_id, rod.cost_price, rod.remark as detail_remark,
+        rod.create_time as detail_create_time, rod.update_time as detail_update_time,
+        p.product_code, p.product_name, p.specification, l.location_code
+        FROM wms_receipt_order_detail rod
+        LEFT JOIN wms_product p ON rod.product_id = p.id
+        LEFT JOIN wms_location l ON rod.location_id = l.id
+        WHERE rod.id = #{id}
+    </select>
+
+    <delete id="deleteDetailById" parameterType="java.lang.Long">
+        DELETE FROM wms_receipt_order_detail WHERE id = #{id}
+    </delete>
+
+</mapper>

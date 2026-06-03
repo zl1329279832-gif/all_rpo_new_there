@@ -1,0 +1,78 @@
+# === Java / Maven ===
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# === IDE ===
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# === Node.js / Frontend ===
+frontend/node_modules/
+frontend/dist/
+frontend/.npm
+frontend/.cache
+frontend/package-lock.json
+frontend/yarn.lock
+frontend.pnpm-lock.yaml
+
+# === Logs ===
+*.log
+logs/
+*.log.*
+nohup.out
+hs_err_pid*
+
+# === Upload files ===
+uploads/
+temp/
+files/
+
+# === Export reports ===
+export/
+reports/
+excel/
+*.xlsx
+*.xls
+*.pdf
+*.csv
+
+# === Config & Local ===
+*.local
+*.bak
+*.tmp
+*.old
+application-local.yml
+application-dev.yml
+config-local.properties
+.DS_Store
+Thumbs.db
+
+# === Database ===
+*.db
+*.sqlite
+
+# === Redis dump ===
+dump.rdb
+appendonly.aof
+
+# === Test coverage ===
+coverage/
+*.lcov
+.nyc_output/
+
+# === Docker ===
+docker-compose.override.yml

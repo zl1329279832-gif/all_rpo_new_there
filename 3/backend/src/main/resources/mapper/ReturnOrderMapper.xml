@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.ReturnOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.ReturnOrder">
+        <id column="id" property="id"/>
+        <result column="return_no" property="returnNo"/>
+        <result column="return_type" property="returnType"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="original_shipment_no" property="originalShipmentNo"/>
+        <result column="status" property="status"/>
+        <result column="total_quantity" property="totalQuantity"/>
+        <result column="actual_quantity" property="actualQuantity"/>
+        <result column="return_reason" property="returnReason"/>
+        <result column="receive_time" property="receiveTime"/>
+        <result column="complete_time" property="completeTime"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="status_name" property="statusName"/>
+        <collection property="details" ofType="com.wms.entity.ReturnOrderDetail" resultMap="DetailResultMap"/>
+    </resultMap>
+
+    <resultMap id="DetailResultMap" type="com.wms.entity.ReturnOrderDetail">
+        <id column="detail_id" property="id"/>
+        <result column="return_order_id" property="returnOrderId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="original_batch_no" property="originalBatchNo"/>
+        <result column="return_quantity" property="returnQuantity"/>
+        <result column="actual_quantity" property="actualQuantity"/>
+        <result column="unit" property="unit"/>
+        <result column="inspection_result" property="inspectionResult"/>
+        <result column="location_id" property="locationId"/>
+        <result column="detail_remark" property="remark"/>
+        <result column="detail_create_time" property="createTime"/>
+        <result column="detail_update_time" property="updateTime"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="location_code" property="locationCode"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, return_no, return_type, warehouse_id, customer_name, original_shipment_no, status,
+        total_quantity, actual_quantity, return_reason, receive_time, complete_time, remark,
+        create_time, update_time, create_by, update_by
+    </sql>
+
+    <sql id="Query_Column_List">
+        ro.id, ro.return_no, ro.return_type, ro.warehouse_id, ro.customer_name, ro.original_shipment_no,
+        ro.status, ro.total_quantity, ro.actual_quantity, ro.return_reason, ro.receive_time,
+        ro.complete_time, ro.remark, ro.create_time, ro.update_time, ro.create_by, ro.update_by,
+        w.warehouse_name,
+        CASE ro.status
+            WHEN 1 THEN '待入库'
+            WHEN 2 THEN '质检中'
+            WHEN 3 THEN '待上架'
+            WHEN 4 THEN '已完成'
+            WHEN 5 THEN '已取消'
+            ELSE '未知'
+        END as status_name
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.ReturnOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_return_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="returnNo != null">return_no,</if>
+            <if test="returnType != null">return_type,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="customerName != null">customer_name,</if>
+            <if test="originalShipmentNo != null">original_shipment_no,</if>
+            <if test="status != null">status,</if>
+            <if test="totalQuantity != null">total_quantity,</if>
+            <if test="actualQuantity != null">actual_quantity,</if>
+            <if test="returnReason != null">return_reason,</if>
+            <if test="receiveTime != null">receive_time,</if>
+            <if test="completeTime != null">complete_time,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="returnNo != null">#{returnNo},</if>
+            <if test="returnType != null">#{returnType},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="customerName != null">#{customerName},</if>
+            <if test="originalShipmentNo != null">#{originalShipmentNo},</if>
+            <if test="status != null">#{status},</if>
+            <if test="totalQuantity != null">#{totalQuantity},</if>
+            <if test="actualQuantity != null">#{actualQuantity},</if>
+            <if test="returnReason != null">#{returnReason},</if>
+            <if test="receiveTime != null">#{receiveTime},</if>
+            <if test="completeTime != null">#{completeTime},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.ReturnOrder">
+        UPDATE wms_return_order
+        <set>
+            <if test="returnNo != null">return_no = #{returnNo},</if>
+            <if test="returnType != null">return_type = #{returnType},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="customerName != null">customer_name = #{customerName},</if>
+            <if test="originalShipmentNo != null">original_shipment_no = #{originalShipmentNo},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="totalQuantity != null">total_quantity = #{totalQuantity},</if>
+            <if test="actualQuantity != null">actual_quantity = #{actualQuantity},</if>
+            <if test="returnReason != null">return_reason = #{returnReason},</if>
+            <if test="receiveTime != null">receive_time = #{receiveTime},</if>
+            <if test="completeTime != null">complete_time = #{completeTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_return_order ro
+        LEFT JOIN wms_warehouse w ON ro.warehouse_id = w.id
+        WHERE ro.id = #{id}
+    </select>
+
+    <select id="selectByNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_return_order ro
+        LEFT JOIN wms_warehouse w ON ro.warehouse_id = w.id
+        WHERE ro.return_no = #{returnNo}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_return_order ro
+        LEFT JOIN wms_warehouse w ON ro.warehouse_id = w.id
+        <where>
+            <if test="returnType != null">AND ro.return_type = #{returnType}</if>
+            <if test="status != null">AND ro.status = #{status}</if>
+            <if test="warehouseId != null">AND ro.warehouse_id = #{warehouseId}</if>
+            <if test="originalShipmentNo != null and originalShipmentNo != ''">AND ro.original_shipment_no LIKE CONCAT('%', #{originalShipmentNo}, '%')</if>
+        </where>
+        ORDER BY ro.create_time DESC
+        LIMIT #{query.pageNum}, #{query.pageSize}
+    </select>
+
+    <insert id="insertDetail" parameterType="com.wms.entity.ReturnOrderDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_return_order_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="returnOrderId != null">return_order_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="originalBatchNo != null">original_batch_no,</if>
+            <if test="returnQuantity != null">return_quantity,</if>
+            <if test="actualQuantity != null">actual_quantity,</if>
+            <if test="unit != null">unit,</if>
+            <if test="inspectionResult != null">inspection_result,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="returnOrderId != null">#{returnOrderId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="originalBatchNo != null">#{originalBatchNo},</if>
+            <if test="returnQuantity != null">#{returnQuantity},</if>
+            <if test="actualQuantity != null">#{actualQuantity},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="inspectionResult != null">#{inspectionResult},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateDetail" parameterType="com.wms.entity.ReturnOrderDetail">
+        UPDATE wms_return_order_detail
+        <set>
+            <if test="returnOrderId != null">return_order_id = #{returnOrderId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="originalBatchNo != null">original_batch_no = #{originalBatchNo},</if>
+            <if test="returnQuantity != null">return_quantity = #{returnQuantity},</if>
+            <if test="actualQuantity != null">actual_quantity = #{actualQuantity},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="inspectionResult != null">inspection_result = #{inspectionResult},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectDetailsByOrderId" parameterType="java.lang.Long" resultMap="DetailResultMap">
+        SELECT
+        rod.id as detail_id, rod.return_order_id, rod.product_id, rod.batch_no, rod.original_batch_no,
+        rod.return_quantity, rod.actual_quantity, rod.unit, rod.inspection_result, rod.location_id,
+        rod.remark as detail_remark, rod.create_time as detail_create_time, rod.update_time as detail_update_time,
+        p.product_code, p.product_name, l.location_code
+        FROM wms_return_order_detail rod
+        LEFT JOIN wms_product p ON rod.product_id = p.id
+        LEFT JOIN wms_location l ON rod.location_id = l.id
+        WHERE rod.return_order_id = #{orderId}
+        ORDER BY rod.id
+    </select>
+
+    <select id="selectDetailById" parameterType="java.lang.Long" resultMap="DetailResultMap">
+        SELECT
+        rod.id as detail_id, rod.return_order_id, rod.product_id, rod.batch_no, rod.original_batch_no,
+        rod.return_quantity, rod.actual_quantity, rod.unit, rod.inspection_result, rod.location_id,
+        rod.remark as detail_remark, rod.create_time as detail_create_time, rod.update_time as detail_update_time,
+        p.product_code, p.product_name, l.location_code
+        FROM wms_return_order_detail rod
+        LEFT JOIN wms_product p ON rod.product_id = p.id
+        LEFT JOIN wms_location l ON rod.location_id = l.id
+        WHERE rod.id = #{id}
+    </select>
+
+</mapper>

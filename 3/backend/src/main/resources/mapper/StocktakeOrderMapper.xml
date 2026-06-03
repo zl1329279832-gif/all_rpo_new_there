@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.StocktakeOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.StocktakeOrder">
+        <id column="id" property="id"/>
+        <result column="stocktake_no" property="stocktakeNo"/>
+        <result column="stocktake_type" property="stocktakeType"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="area_id" property="areaId"/>
+        <result column="stocktake_method" property="stocktakeMethod"/>
+        <result column="status" property="status"/>
+        <result column="total_items" property="totalItems"/>
+        <result column="total_quantity" property="totalQuantity"/>
+        <result column="count_quantity" property="countQuantity"/>
+        <result column="profit_quantity" property="profitQuantity"/>
+        <result column="loss_quantity" property="lossQuantity"/>
+        <result column="confirm_time" property="confirmTime"/>
+        <result column="start_time" property="startTime"/>
+        <result column="finish_time" property="finishTime"/>
+        <result column="handler" property="handler"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="area_name" property="areaName"/>
+        <result column="status_name" property="statusName"/>
+        <collection property="details" ofType="com.wms.entity.StocktakeOrderDetail" resultMap="DetailResultMap"/>
+    </resultMap>
+
+    <resultMap id="DetailResultMap" type="com.wms.entity.StocktakeOrderDetail">
+        <id column="detail_id" property="id"/>
+        <result column="stocktake_order_id" property="stocktakeOrderId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="location_id" property="locationId"/>
+        <result column="system_quantity" property="systemQuantity"/>
+        <result column="first_count" property="firstCount"/>
+        <result column="second_count" property="secondCount"/>
+        <result column="final_count" property="finalCount"/>
+        <result column="diff_quantity" property="diffQuantity"/>
+        <result column="diff_type" property="diffType"/>
+        <result column="unit" property="unit"/>
+        <result column="is_counted" property="isCounted"/>
+        <result column="count_time" property="countTime"/>
+        <result column="counter" property="counter"/>
+        <result column="diff_reason" property="diffReason"/>
+        <result column="process_status" property="processStatus"/>
+        <result column="process_result" property="processResult"/>
+        <result column="process_time" property="processTime"/>
+        <result column="processor" property="processor"/>
+        <result column="detail_remark" property="remark"/>
+        <result column="detail_create_time" property="createTime"/>
+        <result column="detail_update_time" property="updateTime"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="diff_type_name" property="diffTypeName"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, stocktake_no, stocktake_type, warehouse_id, area_id, stocktake_method, status, total_items,
+        total_quantity, count_quantity, profit_quantity, loss_quantity, confirm_time, start_time,
+        finish_time, handler, remark, create_time, update_time, create_by, update_by
+    </sql>
+
+    <sql id="Query_Column_List">
+        so.id, so.stocktake_no, so.stocktake_type, so.warehouse_id, so.area_id, so.stocktake_method,
+        so.status, so.total_items, so.total_quantity, so.count_quantity, so.profit_quantity,
+        so.loss_quantity, so.confirm_time, so.start_time, so.finish_time, so.handler, so.remark,
+        so.create_time, so.update_time, so.create_by, so.update_by,
+        w.warehouse_name, a.area_name,
+        CASE so.status
+            WHEN 1 THEN '新建'
+            WHEN 2 THEN '已确认'
+            WHEN 3 THEN '盘点中'
+            WHEN 4 THEN '差异处理中'
+            WHEN 5 THEN '已完成'
+            WHEN 6 THEN '已取消'
+            ELSE '未知'
+        END as status_name
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.StocktakeOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_stocktake_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="stocktakeNo != null">stocktake_no,</if>
+            <if test="stocktakeType != null">stocktake_type,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="areaId != null">area_id,</if>
+            <if test="stocktakeMethod != null">stocktake_method,</if>
+            <if test="status != null">status,</if>
+            <if test="totalItems != null">total_items,</if>
+            <if test="totalQuantity != null">total_quantity,</if>
+            <if test="countQuantity != null">count_quantity,</if>
+            <if test="profitQuantity != null">profit_quantity,</if>
+            <if test="lossQuantity != null">loss_quantity,</if>
+            <if test="confirmTime != null">confirm_time,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="finishTime != null">finish_time,</if>
+            <if test="handler != null">handler,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="stocktakeNo != null">#{stocktakeNo},</if>
+            <if test="stocktakeType != null">#{stocktakeType},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="areaId != null">#{areaId},</if>
+            <if test="stocktakeMethod != null">#{stocktakeMethod},</if>
+            <if test="status != null">#{status},</if>
+            <if test="totalItems != null">#{totalItems},</if>
+            <if test="totalQuantity != null">#{totalQuantity},</if>
+            <if test="countQuantity != null">#{countQuantity},</if>
+            <if test="profitQuantity != null">#{profitQuantity},</if>
+            <if test="lossQuantity != null">#{lossQuantity},</if>
+            <if test="confirmTime != null">#{confirmTime},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="finishTime != null">#{finishTime},</if>
+            <if test="handler != null">#{handler},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.StocktakeOrder">
+        UPDATE wms_stocktake_order
+        <set>
+            <if test="stocktakeNo != null">stocktake_no = #{stocktakeNo},</if>
+            <if test="stocktakeType != null">stocktake_type = #{stocktakeType},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="areaId != null">area_id = #{areaId},</if>
+            <if test="stocktakeMethod != null">stocktake_method = #{stocktakeMethod},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="totalItems != null">total_items = #{totalItems},</if>
+            <if test="totalQuantity != null">total_quantity = #{totalQuantity},</if>
+            <if test="countQuantity != null">count_quantity = #{countQuantity},</if>
+            <if test="profitQuantity != null">profit_quantity = #{profitQuantity},</if>
+            <if test="lossQuantity != null">loss_quantity = #{lossQuantity},</if>
+            <if test="confirmTime != null">confirm_time = #{confirmTime},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="finishTime != null">finish_time = #{finishTime},</if>
+            <if test="handler != null">handler = #{handler},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_stocktake_order so
+        LEFT JOIN wms_warehouse w ON so.warehouse_id = w.id
+        LEFT JOIN wms_area a ON so.area_id = a.id
+        WHERE so.id = #{id}
+    </select>
+
+    <select id="selectByNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_stocktake_order so
+        LEFT JOIN wms_warehouse w ON so.warehouse_id = w.id
+        LEFT JOIN wms_area a ON so.area_id = a.id
+        WHERE so.stocktake_no = #{stocktakeNo}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_stocktake_order so
+        LEFT JOIN wms_warehouse w ON so.warehouse_id = w.id
+        LEFT JOIN wms_area a ON so.area_id = a.id
+        <where>
+            <if test="stocktakeType != null">AND so.stocktake_type = #{stocktakeType}</if>
+            <if test="status != null">AND so.status = #{status}</if>
+            <if test="warehouseId != null">AND so.warehouse_id = #{warehouseId}</if>
+            <if test="areaId != null">AND so.area_id = #{areaId}</if>
+            <if test="handler != null and handler != ''">AND so.handler LIKE CONCAT('%', #{handler}, '%')</if>
+        </where>
+        ORDER BY so.create_time DESC
+        LIMIT #{query.pageNum}, #{query.pageSize}
+    </select>
+
+    <insert id="insertDetail" parameterType="com.wms.entity.StocktakeOrderDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_stocktake_order_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="stocktakeOrderId != null">stocktake_order_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="systemQuantity != null">system_quantity,</if>
+            <if test="firstCount != null">first_count,</if>
+            <if test="secondCount != null">second_count,</if>
+            <if test="finalCount != null">final_count,</if>
+            <if test="diffQuantity != null">diff_quantity,</if>
+            <if test="diffType != null">diff_type,</if>
+            <if test="unit != null">unit,</if>
+            <if test="isCounted != null">is_counted,</if>
+            <if test="countTime != null">count_time,</if>
+            <if test="counter != null">counter,</if>
+            <if test="diffReason != null">diff_reason,</if>
+            <if test="processStatus != null">process_status,</if>
+            <if test="processResult != null">process_result,</if>
+            <if test="processTime != null">process_time,</if>
+            <if test="processor != null">processor,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="stocktakeOrderId != null">#{stocktakeOrderId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="systemQuantity != null">#{systemQuantity},</if>
+            <if test="firstCount != null">#{firstCount},</if>
+            <if test="secondCount != null">#{secondCount},</if>
+            <if test="finalCount != null">#{finalCount},</if>
+            <if test="diffQuantity != null">#{diffQuantity},</if>
+            <if test="diffType != null">#{diffType},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="isCounted != null">#{isCounted},</if>
+            <if test="countTime != null">#{countTime},</if>
+            <if test="counter != null">#{counter},</if>
+            <if test="diffReason != null">#{diffReason},</if>
+            <if test="processStatus != null">#{processStatus},</if>
+            <if test="processResult != null">#{processResult},</if>
+            <if test="processTime != null">#{processTime},</if>
+            <if test="processor != null">#{processor},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateDetail" parameterType="com.wms.entity.StocktakeOrderDetail">
+        UPDATE wms_stocktake_order_detail
+        <set>
+            <if test="stocktakeOrderId != null">stocktake_order_id = #{stocktakeOrderId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="systemQuantity != null">system_quantity = #{systemQuantity},</if>
+            <if test="firstCount != null">first_count = #{firstCount},</if>
+            <if test="secondCount != null">second_count = #{secondCount},</if>
+            <if test="finalCount != null">final_count = #{finalCount},</if>
+            <if test="diffQuantity != null">diff_quantity = #{diffQuantity},</if>
+            <if test="diffType != null">diff_type = #{diffType},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="isCounted != null">is_counted = #{isCounted},</if>
+            <if test="countTime != null">count_time = #{countTime},</if>
+            <if test="counter != null">counter = #{counter},</if>
+            <if test="diffReason != null">diff_reason = #{diffReason},</if>
+            <if test="processStatus != null">process_status = #{processStatus},</if>
+            <if test="processResult != null">process_result = #{processResult},</if>
+            <if test="processTime != null">process_time = #{processTime},</if>
+            <if test="processor != null">processor = #{processor},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectDetailsByOrderId" parameterType="java.lang.Long" resultMap="DetailResultMap">
+        SELECT
+        sod.id as detail_id, sod.stocktake_order_id, sod.product_id, sod.batch_no, sod.location_id,
+        sod.system_quantity, sod.first_count, sod.second_count, sod.final_count, sod.diff_quantity,
+        sod.diff_type, sod.unit, sod.is_counted, sod.count_time, sod.counter, sod.diff_reason,
+        sod.process_status, sod.process_result, sod.process_time, sod.processor,
+        sod.remark as detail_remark, sod.create_time as detail_create_time, sod.update_time as detail_update_time,
+        p.product_code, p.product_name, l.location_code,
+        CASE sod.diff_type
+            WHEN 1 THEN '盘盈'
+            WHEN 2 THEN '盘亏'
+            WHEN 3 THEN '无差异'
+            ELSE '未知'
+        END as diff_type_name
+        FROM wms_stocktake_order_detail sod
+        LEFT JOIN wms_product p ON sod.product_id = p.id
+        LEFT JOIN wms_location l ON sod.location_id = l.id
+        WHERE sod.stocktake_order_id = #{orderId}
+        ORDER BY sod.id
+    </select>
+
+    <select id="selectDetailById" parameterType="java.lang.Long" resultMap="DetailResultMap">
+        SELECT
+        sod.id as detail_id, sod.stocktake_order_id, sod.product_id, sod.batch_no, sod.location_id,
+        sod.system_quantity, sod.first_count, sod.second_count, sod.final_count, sod.diff_quantity,
+        sod.diff_type, sod.unit, sod.is_counted, sod.count_time, sod.counter, sod.diff_reason,
+        sod.process_status, sod.process_result, sod.process_time, sod.processor,
+        sod.remark as detail_remark, sod.create_time as detail_create_time, sod.update_time as detail_update_time,
+        p.product_code, p.product_name, l.location_code,
+        CASE sod.diff_type
+            WHEN 1 THEN '盘盈'
+            WHEN 2 THEN '盘亏'
+            WHEN 3 THEN '无差异'
+            ELSE '未知'
+        END as diff_type_name
+        FROM wms_stocktake_order_detail sod
+        LEFT JOIN wms_product p ON sod.product_id = p.id
+        LEFT JOIN wms_location l ON sod.location_id = l.id
+        WHERE sod.id = #{id}
+    </select>
+
+    <update id="updateDetailForCount" parameterType="com.wms.entity.StocktakeOrderDetail">
+        UPDATE wms_stocktake_order_detail
+        SET first_count = #{firstCount},
+            second_count = #{secondCount},
+            final_count = #{finalCount},
+            diff_quantity = #{finalCount} - system_quantity,
+            diff_type = CASE 
+                WHEN #{finalCount} > system_quantity THEN 1
+                WHEN #{finalCount} < system_quantity THEN 2
+                ELSE 3
+            END,
+            is_counted = 1,
+            count_time = NOW(),
+            counter = #{counter},
+            diff_reason = #{diffReason},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateDetailForProcess">
+        UPDATE wms_stocktake_order_detail
+        SET process_status = #{processStatus},
+            process_result = #{processResult},
+            process_time = NOW(),
+            processor = #{processor},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteDetailById" parameterType="java.lang.Long">
+        DELETE FROM wms_stocktake_order_detail WHERE id = #{id}
+    </delete>
+
+</mapper>

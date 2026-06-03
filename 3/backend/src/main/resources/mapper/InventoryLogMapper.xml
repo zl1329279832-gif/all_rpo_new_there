@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.InventoryLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.InventoryLog">
+        <id column="id" property="id"/>
+        <result column="log_no" property="logNo"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="location_id" property="locationId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="business_type" property="businessType"/>
+        <result column="business_no" property="businessNo"/>
+        <result column="before_quantity" property="beforeQuantity"/>
+        <result column="change_quantity" property="changeQuantity"/>
+        <result column="after_quantity" property="afterQuantity"/>
+        <result column="unit" property="unit"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="operator" property="operator"/>
+        <result column="operation_time" property="operationTime"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="business_type_name" property="businessTypeName"/>
+        <result column="operation_type_name" property="operationTypeName"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, log_no, warehouse_id, location_id, product_id, batch_no, business_type, business_no,
+        before_quantity, change_quantity, after_quantity, unit, operation_type, operator,
+        operation_time, remark, create_time
+    </sql>
+
+    <sql id="Query_Column_List">
+        il.id, il.log_no, il.warehouse_id, il.location_id, il.product_id, il.batch_no,
+        il.business_type, il.business_no, il.before_quantity, il.change_quantity, il.after_quantity,
+        il.unit, il.operation_type, il.operator, il.operation_time, il.remark, il.create_time,
+        p.product_code, p.product_name, l.location_code,
+        CASE il.business_type
+            WHEN 1 THEN '入库'
+            WHEN 2 THEN '出库'
+            WHEN 3 THEN '调拨'
+            WHEN 4 THEN '盘点'
+            WHEN 5 THEN '冻结'
+            WHEN 6 THEN '解冻'
+            WHEN 7 THEN '退货'
+            WHEN 8 THEN '调整'
+            ELSE '未知'
+        END as business_type_name,
+        CASE il.operation_type
+            WHEN 1 THEN '增加'
+            WHEN 2 THEN '减少'
+            ELSE '未知'
+        END as operation_type_name
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.InventoryLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_inventory_log
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="logNo != null">log_no,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="businessType != null">business_type,</if>
+            <if test="businessNo != null">business_no,</if>
+            <if test="beforeQuantity != null">before_quantity,</if>
+            <if test="changeQuantity != null">change_quantity,</if>
+            <if test="afterQuantity != null">after_quantity,</if>
+            <if test="unit != null">unit,</if>
+            <if test="operationType != null">operation_type,</if>
+            <if test="operator != null">operator,</if>
+            <if test="operationTime != null">operation_time,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="logNo != null">#{logNo},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="businessType != null">#{businessType},</if>
+            <if test="businessNo != null">#{businessNo},</if>
+            <if test="beforeQuantity != null">#{beforeQuantity},</if>
+            <if test="changeQuantity != null">#{changeQuantity},</if>
+            <if test="afterQuantity != null">#{afterQuantity},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="operationType != null">#{operationType},</if>
+            <if test="operator != null">#{operator},</if>
+            <if test="operationTime != null">#{operationTime},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM wms_inventory_log
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_inventory_log il
+        LEFT JOIN wms_product p ON il.product_id = p.id
+        LEFT JOIN wms_location l ON il.location_id = l.id
+        <where>
+            <if test="warehouseId != null">AND il.warehouse_id = #{warehouseId}</if>
+            <if test="productId != null">AND il.product_id = #{productId}</if>
+            <if test="batchNo != null and batchNo != ''">AND il.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+            <if test="businessType != null">AND il.business_type = #{businessType}</if>
+            <if test="businessNo != null and businessNo != ''">AND il.business_no LIKE CONCAT('%', #{businessNo}, '%')</if>
+        </where>
+        ORDER BY il.operation_time DESC
+        LIMIT #{query.pageNum}, #{query.pageSize}
+    </select>
+
+    <select id="selectByBusinessNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_inventory_log il
+        LEFT JOIN wms_product p ON il.product_id = p.id
+        LEFT JOIN wms_location l ON il.location_id = l.id
+        WHERE il.business_no = #{businessNo}
+        ORDER BY il.operation_time DESC
+    </select>
+
+</mapper>

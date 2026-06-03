@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.LocationMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.Location">
+        <id column="id" property="id"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="area_id" property="areaId"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="location_name" property="locationName"/>
+        <result column="location_type" property="locationType"/>
+        <result column="row_num" property="rowNum"/>
+        <result column="column_num" property="columnNum"/>
+        <result column="layer_num" property="layerNum"/>
+        <result column="max_capacity" property="maxCapacity"/>
+        <result column="current_quantity" property="currentQuantity"/>
+        <result column="available_capacity" property="availableCapacity"/>
+        <result column="status" property="status"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="area_name" property="areaName"/>
+        <result column="usage_rate" property="usageRate"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, warehouse_id, area_id, location_code, location_name, location_type, row_num, column_num,
+        layer_num, max_capacity, current_quantity, available_capacity, status, remark, create_time,
+        update_time, create_by, update_by
+    </sql>
+
+    <sql id="Query_Column_List">
+        l.id, l.warehouse_id, l.area_id, l.location_code, l.location_name, l.location_type, l.row_num,
+        l.column_num, l.layer_num, l.max_capacity, l.current_quantity, l.available_capacity, l.status,
+        l.remark, l.create_time, l.update_time, l.create_by, l.update_by,
+        w.warehouse_name, a.area_name,
+        CASE WHEN l.max_capacity > 0 THEN ROUND(l.current_quantity / l.max_capacity * 100, 2) ELSE 0 END as usage_rate
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.Location" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_location
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="areaId != null">area_id,</if>
+            <if test="locationCode != null">location_code,</if>
+            <if test="locationName != null">location_name,</if>
+            <if test="locationType != null">location_type,</if>
+            <if test="rowNum != null">row_num,</if>
+            <if test="columnNum != null">column_num,</if>
+            <if test="layerNum != null">layer_num,</if>
+            <if test="maxCapacity != null">max_capacity,</if>
+            <if test="currentQuantity != null">current_quantity,</if>
+            <if test="availableCapacity != null">available_capacity,</if>
+            <if test="status != null">status,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="areaId != null">#{areaId},</if>
+            <if test="locationCode != null">#{locationCode},</if>
+            <if test="locationName != null">#{locationName},</if>
+            <if test="locationType != null">#{locationType},</if>
+            <if test="rowNum != null">#{rowNum},</if>
+            <if test="columnNum != null">#{columnNum},</if>
+            <if test="layerNum != null">#{layerNum},</if>
+            <if test="maxCapacity != null">#{maxCapacity},</if>
+            <if test="currentQuantity != null">#{currentQuantity},</if>
+            <if test="availableCapacity != null">#{availableCapacity},</if>
+            <if test="status != null">#{status},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.Location">
+        UPDATE wms_location
+        <set>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="areaId != null">area_id = #{areaId},</if>
+            <if test="locationCode != null">location_code = #{locationCode},</if>
+            <if test="locationName != null">location_name = #{locationName},</if>
+            <if test="locationType != null">location_type = #{locationType},</if>
+            <if test="rowNum != null">row_num = #{rowNum},</if>
+            <if test="columnNum != null">column_num = #{columnNum},</if>
+            <if test="layerNum != null">layer_num = #{layerNum},</if>
+            <if test="maxCapacity != null">max_capacity = #{maxCapacity},</if>
+            <if test="currentQuantity != null">current_quantity = #{currentQuantity},</if>
+            <if test="availableCapacity != null">available_capacity = #{availableCapacity},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM wms_location
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_location l
+        LEFT JOIN wms_warehouse w ON l.warehouse_id = w.id
+        LEFT JOIN wms_area a ON l.area_id = a.id
+        <where>
+            <if test="warehouseId != null">AND l.warehouse_id = #{warehouseId}</if>
+            <if test="areaId != null">AND l.area_id = #{areaId}</if>
+            <if test="status != null">AND l.status = #{status}</if>
+            <if test="locationType != null">AND l.location_type = #{locationType}</if>
+        </where>
+        ORDER BY l.row_num, l.column_num, l.layer_num
+    </select>
+
+    <select id="selectAvailableLocation" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_location l
+        LEFT JOIN wms_warehouse w ON l.warehouse_id = w.id
+        LEFT JOIN wms_area a ON l.area_id = a.id
+        <where>
+            l.warehouse_id = #{warehouseId}
+            <if test="areaId != null">AND l.area_id = #{areaId}</if>
+            AND l.status = 1
+            AND l.available_capacity &gt;= #{requiredCapacity}
+            <if test="productType != null">AND l.location_type = #{productType}</if>
+        </where>
+        ORDER BY l.available_capacity DESC
+    </select>
+
+    <select id="selectLocationView" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_location l
+        LEFT JOIN wms_warehouse w ON l.warehouse_id = w.id
+        LEFT JOIN wms_area a ON l.area_id = a.id
+        <where>
+            <if test="warehouseId != null">AND l.warehouse_id = #{warehouseId}</if>
+            <if test="areaId != null">AND l.area_id = #{areaId}</if>
+        </where>
+        ORDER BY l.row_num, l.column_num, l.layer_num
+    </select>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM wms_location WHERE id = #{id}
+    </delete>
+
+</mapper>

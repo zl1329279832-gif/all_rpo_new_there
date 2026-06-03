@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.InventoryBatchMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.InventoryBatch">
+        <id column="id" property="id"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="location_id" property="locationId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="supplier_id" property="supplierId"/>
+        <result column="quantity" property="quantity"/>
+        <result column="available_quantity" property="availableQuantity"/>
+        <result column="locked_quantity" property="lockedQuantity"/>
+        <result column="frozen_quantity" property="frozenQuantity"/>
+        <result column="unit" property="unit"/>
+        <result column="produce_date" property="produceDate"/>
+        <result column="expire_date" property="expireDate"/>
+        <result column="inbound_date" property="inboundDate"/>
+        <result column="inventory_status" property="inventoryStatus"/>
+        <result column="inspection_status" property="inspectionStatus"/>
+        <result column="cost_price" property="costPrice"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="supplier_name" property="supplierName"/>
+        <result column="remaining_days" property="remainingDays"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, warehouse_id, location_id, product_id, batch_no, supplier_id, quantity, available_quantity,
+        locked_quantity, frozen_quantity, unit, produce_date, expire_date, inbound_date, inventory_status,
+        inspection_status, cost_price, remark, create_time, update_time, create_by, update_by
+    </sql>
+
+    <sql id="Query_Column_List">
+        ib.id, ib.warehouse_id, ib.location_id, ib.product_id, ib.batch_no, ib.supplier_id, ib.quantity,
+        ib.available_quantity, ib.locked_quantity, ib.frozen_quantity, ib.unit, ib.produce_date, ib.expire_date,
+        ib.inbound_date, ib.inventory_status, ib.inspection_status, ib.cost_price, ib.remark,
+        ib.create_time, ib.update_time, ib.create_by, ib.update_by,
+        p.product_code, p.product_name, l.location_code, s.supplier_name,
+        DATEDIFF(ib.expire_date, CURDATE()) as remaining_days
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.InventoryBatch" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_inventory_batch
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="supplierId != null">supplier_id,</if>
+            <if test="quantity != null">quantity,</if>
+            <if test="availableQuantity != null">available_quantity,</if>
+            <if test="lockedQuantity != null">locked_quantity,</if>
+            <if test="frozenQuantity != null">frozen_quantity,</if>
+            <if test="unit != null">unit,</if>
+            <if test="produceDate != null">produce_date,</if>
+            <if test="expireDate != null">expire_date,</if>
+            <if test="inboundDate != null">inbound_date,</if>
+            <if test="inventoryStatus != null">inventory_status,</if>
+            <if test="inspectionStatus != null">inspection_status,</if>
+            <if test="costPrice != null">cost_price,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="supplierId != null">#{supplierId},</if>
+            <if test="quantity != null">#{quantity},</if>
+            <if test="availableQuantity != null">#{availableQuantity},</if>
+            <if test="lockedQuantity != null">#{lockedQuantity},</if>
+            <if test="frozenQuantity != null">#{frozenQuantity},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="produceDate != null">#{produceDate},</if>
+            <if test="expireDate != null">#{expireDate},</if>
+            <if test="inboundDate != null">#{inboundDate},</if>
+            <if test="inventoryStatus != null">#{inventoryStatus},</if>
+            <if test="inspectionStatus != null">#{inspectionStatus},</if>
+            <if test="costPrice != null">#{costPrice},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.InventoryBatch">
+        UPDATE wms_inventory_batch
+        <set>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="availableQuantity != null">available_quantity = #{availableQuantity},</if>
+            <if test="lockedQuantity != null">locked_quantity = #{lockedQuantity},</if>
+            <if test="frozenQuantity != null">frozen_quantity = #{frozenQuantity},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="produceDate != null">produce_date = #{produceDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="inboundDate != null">inbound_date = #{inboundDate},</if>
+            <if test="inventoryStatus != null">inventory_status = #{inventoryStatus},</if>
+            <if test="inspectionStatus != null">inspection_status = #{inspectionStatus},</if>
+            <if test="costPrice != null">cost_price = #{costPrice},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM wms_inventory_batch
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectList" parameterType="com.wms.dto.InventoryQueryDTO" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_inventory_batch ib
+        LEFT JOIN wms_product p ON ib.product_id = p.id
+        LEFT JOIN wms_location l ON ib.location_id = l.id
+        LEFT JOIN wms_supplier s ON ib.supplier_id = s.id
+        <where>
+            <if test="warehouseId != null">AND ib.warehouse_id = #{warehouseId}</if>
+            <if test="locationId != null">AND ib.location_id = #{locationId}</if>
+            <if test="areaId != null">AND EXISTS (SELECT 1 FROM wms_location l2 WHERE l2.id = ib.location_id AND l2.area_id = #{areaId})</if>
+            <if test="productId != null">AND ib.product_id = #{productId}</if>
+            <if test="productCode != null and productCode != ''">AND p.product_code LIKE CONCAT('%', #{productCode}, '%')</if>
+            <if test="productName != null and productName != ''">AND p.product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="batchNo != null and batchNo != ''">AND ib.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+            <if test="supplierId != null">AND ib.supplier_id = #{supplierId}</if>
+            <if test="inventoryStatus != null and inventoryStatus.size() > 0">
+                AND ib.inventory_status IN
+                <foreach collection="inventoryStatus" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="onlyHasStock != null and onlyHasStock == true">AND ib.quantity > 0</if>
+            <if test="produceDateStart != null">AND ib.produce_date &gt;= #{produceDateStart}</if>
+            <if test="produceDateEnd != null">AND ib.produce_date &lt;= #{produceDateEnd}</if>
+            <if test="expireDateStart != null">AND ib.expire_date &gt;= #{expireDateStart}</if>
+            <if test="expireDateEnd != null">AND ib.expire_date &lt;= #{expireDateEnd}</if>
+            <if test="inboundDateStart != null">AND ib.inbound_date &gt;= #{inboundDateStart}</if>
+            <if test="inboundDateEnd != null">AND ib.inbound_date &lt;= #{inboundDateEnd}</if>
+        </where>
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy} ${orderDirection}
+            </when>
+            <otherwise>
+                ORDER BY ib.create_time DESC
+            </otherwise>
+        </choose>
+        LIMIT #{pageNum}, #{pageSize}
+    </select>
+
+    <select id="selectByProductIdForOutbound" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM wms_inventory_batch
+        WHERE warehouse_id = #{warehouseId}
+        AND product_id = #{productId}
+        AND available_quantity > 0
+        AND inventory_status != 4
+        <choose>
+            <when test="outboundStrategy == 2">
+                ORDER BY expire_date ASC
+            </when>
+            <when test="outboundStrategy == 3 and specifyBatchNo != null and specifyBatchNo != ''">
+                AND batch_no = #{specifyBatchNo}
+                ORDER BY create_time ASC
+            </when>
+            <otherwise>
+                ORDER BY create_time ASC
+            </otherwise>
+        </choose>
+    </select>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM wms_inventory_batch WHERE id = #{id}
+    </delete>
+
+</mapper>

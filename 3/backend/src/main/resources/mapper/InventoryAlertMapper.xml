@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.InventoryAlertMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.InventoryAlert">
+        <id column="id" property="id"/>
+        <result column="alert_no" property="alertNo"/>
+        <result column="alert_type" property="alertType"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="location_id" property="locationId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="current_quantity" property="currentQuantity"/>
+        <result column="threshold_quantity" property="thresholdQuantity"/>
+        <result column="current_date" property="currentDate"/>
+        <result column="expire_date" property="expireDate"/>
+        <result column="remaining_days" property="remainingDays"/>
+        <result column="alert_level" property="alertLevel"/>
+        <result column="alert_time" property="alertTime"/>
+        <result column="status" property="status"/>
+        <result column="handler" property="handler"/>
+        <result column="handle_time" property="handleTime"/>
+        <result column="handle_result" property="handleResult"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="alert_type_name" property="alertTypeName"/>
+        <result column="alert_level_name" property="alertLevelName"/>
+        <result column="status_name" property="statusName"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, alert_no, alert_type, warehouse_id, location_id, product_id, batch_no, current_quantity,
+        threshold_quantity, current_date, expire_date, remaining_days, alert_level, alert_time,
+        status, handler, handle_time, handle_result, remark, create_time, update_time
+    </sql>
+
+    <sql id="Query_Column_List">
+        ia.id, ia.alert_no, ia.alert_type, ia.warehouse_id, ia.location_id, ia.product_id, ia.batch_no,
+        ia.current_quantity, ia.threshold_quantity, ia.current_date, ia.expire_date, ia.remaining_days,
+        ia.alert_level, ia.alert_time, ia.status, ia.handler, ia.handle_time, ia.handle_result,
+        ia.remark, ia.create_time, ia.update_time,
+        p.product_code, p.product_name,
+        CASE ia.alert_type
+            WHEN 1 THEN '库存不足'
+            WHEN 2 THEN '库存过量'
+            WHEN 3 THEN '效期临期'
+            WHEN 4 THEN '效期过期'
+            WHEN 5 THEN '库位容量不足'
+            ELSE '未知'
+        END as alert_type_name,
+        CASE ia.alert_level
+            WHEN 1 THEN '低'
+            WHEN 2 THEN '中'
+            WHEN 3 THEN '高'
+            ELSE '未知'
+        END as alert_level_name,
+        CASE ia.status
+            WHEN 1 THEN '待处理'
+            WHEN 2 THEN '处理中'
+            WHEN 3 THEN '已处理'
+            WHEN 4 THEN '已忽略'
+            ELSE '未知'
+        END as status_name
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.InventoryAlert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_inventory_alert
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="alertNo != null">alert_no,</if>
+            <if test="alertType != null">alert_type,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="currentQuantity != null">current_quantity,</if>
+            <if test="thresholdQuantity != null">threshold_quantity,</if>
+            <if test="currentDate != null">current_date,</if>
+            <if test="expireDate != null">expire_date,</if>
+            <if test="remainingDays != null">remaining_days,</if>
+            <if test="alertLevel != null">alert_level,</if>
+            <if test="alertTime != null">alert_time,</if>
+            <if test="status != null">status,</if>
+            <if test="handler != null">handler,</if>
+            <if test="handleTime != null">handle_time,</if>
+            <if test="handleResult != null">handle_result,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="alertNo != null">#{alertNo},</if>
+            <if test="alertType != null">#{alertType},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="currentQuantity != null">#{currentQuantity},</if>
+            <if test="thresholdQuantity != null">#{thresholdQuantity},</if>
+            <if test="currentDate != null">#{currentDate},</if>
+            <if test="expireDate != null">#{expireDate},</if>
+            <if test="remainingDays != null">#{remainingDays},</if>
+            <if test="alertLevel != null">#{alertLevel},</if>
+            <if test="alertTime != null">#{alertTime},</if>
+            <if test="status != null">#{status},</if>
+            <if test="handler != null">#{handler},</if>
+            <if test="handleTime != null">#{handleTime},</if>
+            <if test="handleResult != null">#{handleResult},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.InventoryAlert">
+        UPDATE wms_inventory_alert
+        <set>
+            <if test="alertNo != null">alert_no = #{alertNo},</if>
+            <if test="alertType != null">alert_type = #{alertType},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="currentQuantity != null">current_quantity = #{currentQuantity},</if>
+            <if test="thresholdQuantity != null">threshold_quantity = #{thresholdQuantity},</if>
+            <if test="currentDate != null">current_date = #{currentDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="remainingDays != null">remaining_days = #{remainingDays},</if>
+            <if test="alertLevel != null">alert_level = #{alertLevel},</if>
+            <if test="alertTime != null">alert_time = #{alertTime},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="handler != null">handler = #{handler},</if>
+            <if test="handleTime != null">handle_time = #{handleTime},</if>
+            <if test="handleResult != null">handle_result = #{handleResult},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM wms_inventory_alert
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_inventory_alert ia
+        LEFT JOIN wms_product p ON ia.product_id = p.id
+        <where>
+            <if test="alertType != null">AND ia.alert_type = #{alertType}</if>
+            <if test="alertLevel != null">AND ia.alert_level = #{alertLevel}</if>
+            <if test="status != null">AND ia.status = #{status}</if>
+            <if test="warehouseId != null">AND ia.warehouse_id = #{warehouseId}</if>
+            <if test="productId != null">AND ia.product_id = #{productId}</if>
+        </where>
+        ORDER BY ia.alert_time DESC
+        LIMIT #{query.pageNum}, #{query.pageSize}
+    </select>
+
+    <select id="countPending" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM wms_inventory_alert WHERE status = 1
+    </select>
+
+    <update id="updateStatus">
+        UPDATE wms_inventory_alert
+        SET status = #{status},
+            handler = #{handler},
+            handle_result = #{handleResult},
+            handle_time = NOW(),
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

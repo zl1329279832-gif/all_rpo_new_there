@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.PickingTaskDetailMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.PickingTaskDetail">
+        <id column="id" property="id"/>
+        <result column="picking_task_id" property="pickingTaskId"/>
+        <result column="shipment_allocate_id" property="shipmentAllocateId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="location_id" property="locationId"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="plan_quantity" property="planQuantity"/>
+        <result column="picked_quantity" property="pickedQuantity"/>
+        <result column="unit" property="unit"/>
+        <result column="is_picked" property="isPicked"/>
+        <result column="pick_time" property="pickTime"/>
+        <result column="pick_operator" property="pickOperator"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="specification" property="specification"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, picking_task_id, shipment_allocate_id, product_id, batch_no, location_id, location_code,
+        plan_quantity, picked_quantity, unit, is_picked, pick_time, pick_operator, remark,
+        create_time, update_time
+    </sql>
+
+    <sql id="Query_Column_List">
+        ptd.id, ptd.picking_task_id, ptd.shipment_allocate_id, ptd.product_id, ptd.batch_no,
+        ptd.location_id, ptd.location_code, ptd.plan_quantity, ptd.picked_quantity, ptd.unit,
+        ptd.is_picked, ptd.pick_time, ptd.pick_operator, ptd.remark, ptd.create_time, ptd.update_time,
+        p.product_code, p.product_name, p.specification
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.PickingTaskDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_picking_task_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="pickingTaskId != null">picking_task_id,</if>
+            <if test="shipmentAllocateId != null">shipment_allocate_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="locationCode != null">location_code,</if>
+            <if test="planQuantity != null">plan_quantity,</if>
+            <if test="pickedQuantity != null">picked_quantity,</if>
+            <if test="unit != null">unit,</if>
+            <if test="isPicked != null">is_picked,</if>
+            <if test="pickTime != null">pick_time,</if>
+            <if test="pickOperator != null">pick_operator,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="pickingTaskId != null">#{pickingTaskId},</if>
+            <if test="shipmentAllocateId != null">#{shipmentAllocateId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="locationCode != null">#{locationCode},</if>
+            <if test="planQuantity != null">#{planQuantity},</if>
+            <if test="pickedQuantity != null">#{pickedQuantity},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="isPicked != null">#{isPicked},</if>
+            <if test="pickTime != null">#{pickTime},</if>
+            <if test="pickOperator != null">#{pickOperator},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.PickingTaskDetail">
+        UPDATE wms_picking_task_detail
+        <set>
+            <if test="pickingTaskId != null">picking_task_id = #{pickingTaskId},</if>
+            <if test="shipmentAllocateId != null">shipment_allocate_id = #{shipmentAllocateId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="locationCode != null">location_code = #{locationCode},</if>
+            <if test="planQuantity != null">plan_quantity = #{planQuantity},</if>
+            <if test="pickedQuantity != null">picked_quantity = #{pickedQuantity},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="isPicked != null">is_picked = #{isPicked},</if>
+            <if test="pickTime != null">pick_time = #{pickTime},</if>
+            <if test="pickOperator != null">pick_operator = #{pickOperator},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM wms_picking_task_detail
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByTaskId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_picking_task_detail ptd
+        LEFT JOIN wms_product p ON ptd.product_id = p.id
+        WHERE ptd.picking_task_id = #{taskId}
+        ORDER BY ptd.id
+    </select>
+
+    <select id="selectUnpickedByTaskId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_picking_task_detail ptd
+        LEFT JOIN wms_product p ON ptd.product_id = p.id
+        WHERE ptd.picking_task_id = #{taskId}
+        AND ptd.is_picked = 0
+        ORDER BY ptd.id
+    </select>
+
+    <update id="confirmPicking">
+        UPDATE wms_picking_task_detail
+        SET picked_quantity = #{pickedQuantity},
+            is_picked = 1,
+            pick_time = NOW(),
+            pick_operator = #{operator},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM wms_picking_task_detail WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByTaskId" parameterType="java.lang.Long">
+        DELETE FROM wms_picking_task_detail WHERE picking_task_id = #{taskId}
+    </delete>
+
+</mapper>

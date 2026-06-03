@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.ShipmentOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.ShipmentOrder">
+        <id column="id" property="id"/>
+        <result column="shipment_no" property="shipmentNo"/>
+        <result column="shipment_type" property="shipmentType"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="customer_name" property="customerName"/>
+        <result column="order_status" property="orderStatus"/>
+        <result column="total_quantity" property="totalQuantity"/>
+        <result column="picked_quantity" property="pickedQuantity"/>
+        <result column="reviewed_quantity" property="reviewedQuantity"/>
+        <result column="actual_quantity" property="actualQuantity"/>
+        <result column="allocate_time" property="allocateTime"/>
+        <result column="picking_time" property="pickingTime"/>
+        <result column="review_time" property="reviewTime"/>
+        <result column="shipment_time" property="shipmentTime"/>
+        <result column="cancel_time" property="cancelTime"/>
+        <result column="cancel_reason" property="cancelReason"/>
+        <result column="source_order_no" property="sourceOrderNo"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="create_by" property="createBy"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="shipment_type_name" property="shipmentTypeName"/>
+        <result column="order_status_name" property="orderStatusName"/>
+        <collection property="details" ofType="com.wms.entity.ShipmentOrderDetail" resultMap="DetailResultMap"/>
+    </resultMap>
+
+    <resultMap id="DetailResultMap" type="com.wms.entity.ShipmentOrderDetail">
+        <id column="detail_id" property="id"/>
+        <result column="shipment_order_id" property="shipmentOrderId"/>
+        <result column="product_id" property="productId"/>
+        <result column="plan_quantity" property="planQuantity"/>
+        <result column="allocated_quantity" property="allocatedQuantity"/>
+        <result column="picked_quantity" property="pickedQuantity"/>
+        <result column="reviewed_quantity" property="reviewedQuantity"/>
+        <result column="actual_quantity" property="actualQuantity"/>
+        <result column="unit" property="unit"/>
+        <result column="outbound_strategy" property="outboundStrategy"/>
+        <result column="price" property="price"/>
+        <result column="detail_remark" property="remark"/>
+        <result column="detail_create_time" property="createTime"/>
+        <result column="detail_update_time" property="updateTime"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="specification" property="specification"/>
+        <result column="outbound_strategy_name" property="outboundStrategyName"/>
+        <collection property="allocateDetails" ofType="com.wms.entity.ShipmentAllocateDetail" resultMap="AllocateDetailResultMap"/>
+    </resultMap>
+
+    <resultMap id="AllocateDetailResultMap" type="com.wms.entity.ShipmentAllocateDetail">
+        <id column="allocate_id" property="id"/>
+        <result column="shipment_order_id" property="shipmentOrderId"/>
+        <result column="shipment_detail_id" property="shipmentDetailId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="location_id" property="locationId"/>
+        <result column="allocate_quantity" property="allocateQuantity"/>
+        <result column="allocate_picked_quantity" property="pickedQuantity"/>
+        <result column="allocate_reviewed_quantity" property="reviewedQuantity"/>
+        <result column="allocate_unit" property="unit"/>
+        <result column="produce_date" property="produceDate"/>
+        <result column="expire_date" property="expireDate"/>
+        <result column="cost_price" property="costPrice"/>
+        <result column="is_picked" property="isPicked"/>
+        <result column="is_reviewed" property="isReviewed"/>
+        <result column="allocate_remark" property="remark"/>
+        <result column="allocate_create_time" property="createTime"/>
+        <result column="allocate_update_time" property="updateTime"/>
+        <result column="allocate_product_code" property="productCode"/>
+        <result column="allocate_product_name" property="productName"/>
+        <result column="allocate_location_code" property="locationCode"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, shipment_no, shipment_type, warehouse_id, customer_name, order_status, total_quantity,
+        picked_quantity, reviewed_quantity, actual_quantity, allocate_time, picking_time, review_time,
+        shipment_time, cancel_time, cancel_reason, source_order_no, remark, create_time, update_time,
+        create_by, update_by
+    </sql>
+
+    <sql id="Query_Column_List">
+        so.id, so.shipment_no, so.shipment_type, so.warehouse_id, so.customer_name, so.order_status,
+        so.total_quantity, so.picked_quantity, so.reviewed_quantity, so.actual_quantity, so.allocate_time,
+        so.picking_time, so.review_time, so.shipment_time, so.cancel_time, so.cancel_reason,
+        so.source_order_no, so.remark, so.create_time, so.update_time, so.create_by, so.update_by,
+        w.warehouse_name,
+        CASE so.shipment_type
+            WHEN 1 THEN '销售出库'
+            WHEN 2 THEN '调拨出库'
+            WHEN 3 THEN '退货出库'
+            WHEN 4 THEN '盘亏出库'
+            WHEN 5 THEN '报废出库'
+            ELSE '未知'
+        END as shipment_type_name,
+        CASE so.order_status
+            WHEN 1 THEN '待确认'
+            WHEN 2 THEN '已确认'
+            WHEN 3 THEN '拣货中'
+            WHEN 4 THEN '拣货完成'
+            WHEN 5 THEN '复核中'
+            WHEN 6 THEN '复核完成'
+            WHEN 7 THEN '已出库'
+            WHEN 8 THEN '已取消'
+            ELSE '未知'
+        END as order_status_name
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.ShipmentOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_shipment_order
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="shipmentNo != null">shipment_no,</if>
+            <if test="shipmentType != null">shipment_type,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="customerName != null">customer_name,</if>
+            <if test="orderStatus != null">order_status,</if>
+            <if test="totalQuantity != null">total_quantity,</if>
+            <if test="pickedQuantity != null">picked_quantity,</if>
+            <if test="reviewedQuantity != null">reviewed_quantity,</if>
+            <if test="actualQuantity != null">actual_quantity,</if>
+            <if test="allocateTime != null">allocate_time,</if>
+            <if test="pickingTime != null">picking_time,</if>
+            <if test="reviewTime != null">review_time,</if>
+            <if test="shipmentTime != null">shipment_time,</if>
+            <if test="cancelTime != null">cancel_time,</if>
+            <if test="cancelReason != null">cancel_reason,</if>
+            <if test="sourceOrderNo != null">source_order_no,</if>
+            <if test="remark != null">remark,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="shipmentNo != null">#{shipmentNo},</if>
+            <if test="shipmentType != null">#{shipmentType},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="customerName != null">#{customerName},</if>
+            <if test="orderStatus != null">#{orderStatus},</if>
+            <if test="totalQuantity != null">#{totalQuantity},</if>
+            <if test="pickedQuantity != null">#{pickedQuantity},</if>
+            <if test="reviewedQuantity != null">#{reviewedQuantity},</if>
+            <if test="actualQuantity != null">#{actualQuantity},</if>
+            <if test="allocateTime != null">#{allocateTime},</if>
+            <if test="pickingTime != null">#{pickingTime},</if>
+            <if test="reviewTime != null">#{reviewTime},</if>
+            <if test="shipmentTime != null">#{shipmentTime},</if>
+            <if test="cancelTime != null">#{cancelTime},</if>
+            <if test="cancelReason != null">#{cancelReason},</if>
+            <if test="sourceOrderNo != null">#{sourceOrderNo},</if>
+            <if test="remark != null">#{remark},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.ShipmentOrder">
+        UPDATE wms_shipment_order
+        <set>
+            <if test="shipmentNo != null">shipment_no = #{shipmentNo},</if>
+            <if test="shipmentType != null">shipment_type = #{shipmentType},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="customerName != null">customer_name = #{customerName},</if>
+            <if test="orderStatus != null">order_status = #{orderStatus},</if>
+            <if test="totalQuantity != null">total_quantity = #{totalQuantity},</if>
+            <if test="pickedQuantity != null">picked_quantity = #{pickedQuantity},</if>
+            <if test="reviewedQuantity != null">reviewed_quantity = #{reviewedQuantity},</if>
+            <if test="actualQuantity != null">actual_quantity = #{actualQuantity},</if>
+            <if test="allocateTime != null">allocate_time = #{allocateTime},</if>
+            <if test="pickingTime != null">picking_time = #{pickingTime},</if>
+            <if test="reviewTime != null">review_time = #{reviewTime},</if>
+            <if test="shipmentTime != null">shipment_time = #{shipmentTime},</if>
+            <if test="cancelTime != null">cancel_time = #{cancelTime},</if>
+            <if test="cancelReason != null">cancel_reason = #{cancelReason},</if>
+            <if test="sourceOrderNo != null">source_order_no = #{sourceOrderNo},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_shipment_order so
+        LEFT JOIN wms_warehouse w ON so.warehouse_id = w.id
+        WHERE so.id = #{id}
+    </select>
+
+    <select id="selectByNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_shipment_order so
+        LEFT JOIN wms_warehouse w ON so.warehouse_id = w.id
+        WHERE so.shipment_no = #{shipmentNo}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_shipment_order so
+        LEFT JOIN wms_warehouse w ON so.warehouse_id = w.id
+        <where>
+            <if test="shipmentType != null">AND so.shipment_type = #{shipmentType}</if>
+            <if test="orderStatus != null">AND so.order_status = #{orderStatus}</if>
+            <if test="warehouseId != null">AND so.warehouse_id = #{warehouseId}</if>
+            <if test="customerName != null and customerName != ''">AND so.customer_name LIKE CONCAT('%', #{customerName}, '%')</if>
+            <if test="startTime != null">AND so.create_time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND so.create_time &lt;= #{endTime}</if>
+        </where>
+        ORDER BY so.create_time DESC
+        LIMIT #{query.pageNum}, #{query.pageSize}
+    </select>
+
+    <insert id="insertDetail" parameterType="com.wms.entity.ShipmentOrderDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_shipment_order_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="shipmentOrderId != null">shipment_order_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="planQuantity != null">plan_quantity,</if>
+            <if test="allocatedQuantity != null">allocated_quantity,</if>
+            <if test="pickedQuantity != null">picked_quantity,</if>
+            <if test="reviewedQuantity != null">reviewed_quantity,</if>
+            <if test="actualQuantity != null">actual_quantity,</if>
+            <if test="unit != null">unit,</if>
+            <if test="outboundStrategy != null">outbound_strategy,</if>
+            <if test="price != null">price,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="shipmentOrderId != null">#{shipmentOrderId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="planQuantity != null">#{planQuantity},</if>
+            <if test="allocatedQuantity != null">#{allocatedQuantity},</if>
+            <if test="pickedQuantity != null">#{pickedQuantity},</if>
+            <if test="reviewedQuantity != null">#{reviewedQuantity},</if>
+            <if test="actualQuantity != null">#{actualQuantity},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="outboundStrategy != null">#{outboundStrategy},</if>
+            <if test="price != null">#{price},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateDetail" parameterType="com.wms.entity.ShipmentOrderDetail">
+        UPDATE wms_shipment_order_detail
+        <set>
+            <if test="shipmentOrderId != null">shipment_order_id = #{shipmentOrderId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="planQuantity != null">plan_quantity = #{planQuantity},</if>
+            <if test="allocatedQuantity != null">allocated_quantity = #{allocatedQuantity},</if>
+            <if test="pickedQuantity != null">picked_quantity = #{pickedQuantity},</if>
+            <if test="reviewedQuantity != null">reviewed_quantity = #{reviewedQuantity},</if>
+            <if test="actualQuantity != null">actual_quantity = #{actualQuantity},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="outboundStrategy != null">outbound_strategy = #{outboundStrategy},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectDetailsByOrderId" parameterType="java.lang.Long" resultMap="DetailResultMap">
+        SELECT
+        sod.id as detail_id, sod.shipment_order_id, sod.product_id, sod.plan_quantity,
+        sod.allocated_quantity, sod.picked_quantity, sod.reviewed_quantity, sod.actual_quantity,
+        sod.unit, sod.outbound_strategy, sod.price, sod.remark as detail_remark,
+        sod.create_time as detail_create_time, sod.update_time as detail_update_time,
+        p.product_code, p.product_name, p.specification,
+        CASE sod.outbound_strategy
+            WHEN 1 THEN '先进先出(FIFO)'
+            WHEN 2 THEN '效期优先(FEFO)'
+            WHEN 3 THEN '指定批次'
+            ELSE '未知'
+        END as outbound_strategy_name
+        FROM wms_shipment_order_detail sod
+        LEFT JOIN wms_product p ON sod.product_id = p.id
+        WHERE sod.shipment_order_id = #{orderId}
+        ORDER BY sod.id
+    </select>
+
+    <select id="selectDetailById" parameterType="java.lang.Long" resultMap="DetailResultMap">
+        SELECT
+        sod.id as detail_id, sod.shipment_order_id, sod.product_id, sod.plan_quantity,
+        sod.allocated_quantity, sod.picked_quantity, sod.reviewed_quantity, sod.actual_quantity,
+        sod.unit, sod.outbound_strategy, sod.price, sod.remark as detail_remark,
+        sod.create_time as detail_create_time, sod.update_time as detail_update_time,
+        p.product_code, p.product_name, p.specification,
+        CASE sod.outbound_strategy
+            WHEN 1 THEN '先进先出(FIFO)'
+            WHEN 2 THEN '效期优先(FEFO)'
+            WHEN 3 THEN '指定批次'
+            ELSE '未知'
+        END as outbound_strategy_name
+        FROM wms_shipment_order_detail sod
+        LEFT JOIN wms_product p ON sod.product_id = p.id
+        WHERE sod.id = #{id}
+    </select>
+
+    <insert id="insertAllocateDetail" parameterType="com.wms.entity.ShipmentAllocateDetail" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_shipment_allocate_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="shipmentOrderId != null">shipment_order_id,</if>
+            <if test="shipmentDetailId != null">shipment_detail_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="allocateQuantity != null">allocate_quantity,</if>
+            <if test="pickedQuantity != null">picked_quantity,</if>
+            <if test="reviewedQuantity != null">reviewed_quantity,</if>
+            <if test="unit != null">unit,</if>
+            <if test="produceDate != null">produce_date,</if>
+            <if test="expireDate != null">expire_date,</if>
+            <if test="costPrice != null">cost_price,</if>
+            <if test="isPicked != null">is_picked,</if>
+            <if test="isReviewed != null">is_reviewed,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="shipmentOrderId != null">#{shipmentOrderId},</if>
+            <if test="shipmentDetailId != null">#{shipmentDetailId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="allocateQuantity != null">#{allocateQuantity},</if>
+            <if test="pickedQuantity != null">#{pickedQuantity},</if>
+            <if test="reviewedQuantity != null">#{reviewedQuantity},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="produceDate != null">#{produceDate},</if>
+            <if test="expireDate != null">#{expireDate},</if>
+            <if test="costPrice != null">#{costPrice},</if>
+            <if test="isPicked != null">#{isPicked},</if>
+            <if test="isReviewed != null">#{isReviewed},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateAllocateDetail" parameterType="com.wms.entity.ShipmentAllocateDetail">
+        UPDATE wms_shipment_allocate_detail
+        <set>
+            <if test="shipmentOrderId != null">shipment_order_id = #{shipmentOrderId},</if>
+            <if test="shipmentDetailId != null">shipment_detail_id = #{shipmentDetailId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="allocateQuantity != null">allocate_quantity = #{allocateQuantity},</if>
+            <if test="pickedQuantity != null">picked_quantity = #{pickedQuantity},</if>
+            <if test="reviewedQuantity != null">reviewed_quantity = #{reviewedQuantity},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="produceDate != null">produce_date = #{produceDate},</if>
+            <if test="expireDate != null">expire_date = #{expireDate},</if>
+            <if test="costPrice != null">cost_price = #{costPrice},</if>
+            <if test="isPicked != null">is_picked = #{isPicked},</if>
+            <if test="isReviewed != null">is_reviewed = #{isReviewed},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectAllocateDetailsByOrderId" parameterType="java.lang.Long" resultMap="AllocateDetailResultMap">
+        SELECT
+        sad.id as allocate_id, sad.shipment_order_id, sad.shipment_detail_id, sad.product_id,
+        sad.batch_no, sad.location_id, sad.allocate_quantity, sad.picked_quantity as allocate_picked_quantity,
+        sad.reviewed_quantity as allocate_reviewed_quantity, sad.unit as allocate_unit,
+        sad.produce_date, sad.expire_date, sad.cost_price, sad.is_picked, sad.is_reviewed,
+        sad.remark as allocate_remark, sad.create_time as allocate_create_time,
+        sad.update_time as allocate_update_time,
+        p.product_code as allocate_product_code, p.product_name as allocate_product_name,
+        l.location_code as allocate_location_code
+        FROM wms_shipment_allocate_detail sad
+        LEFT JOIN wms_product p ON sad.product_id = p.id
+        LEFT JOIN wms_location l ON sad.location_id = l.id
+        WHERE sad.shipment_order_id = #{orderId}
+        ORDER BY sad.id
+    </select>
+
+    <select id="selectAllocateDetailsByDetailId" parameterType="java.lang.Long" resultMap="AllocateDetailResultMap">
+        SELECT
+        sad.id as allocate_id, sad.shipment_order_id, sad.shipment_detail_id, sad.product_id,
+        sad.batch_no, sad.location_id, sad.allocate_quantity, sad.picked_quantity as allocate_picked_quantity,
+        sad.reviewed_quantity as allocate_reviewed_quantity, sad.unit as allocate_unit,
+        sad.produce_date, sad.expire_date, sad.cost_price, sad.is_picked, sad.is_reviewed,
+        sad.remark as allocate_remark, sad.create_time as allocate_create_time,
+        sad.update_time as allocate_update_time,
+        p.product_code as allocate_product_code, p.product_name as allocate_product_name,
+        l.location_code as allocate_location_code
+        FROM wms_shipment_allocate_detail sad
+        LEFT JOIN wms_product p ON sad.product_id = p.id
+        LEFT JOIN wms_location l ON sad.location_id = l.id
+        WHERE sad.shipment_detail_id = #{detailId}
+        ORDER BY sad.id
+    </select>
+
+    <select id="selectAllocateDetailById" parameterType="java.lang.Long" resultMap="AllocateDetailResultMap">
+        SELECT
+        sad.id as allocate_id, sad.shipment_order_id, sad.shipment_detail_id, sad.product_id,
+        sad.batch_no, sad.location_id, sad.allocate_quantity, sad.picked_quantity as allocate_picked_quantity,
+        sad.reviewed_quantity as allocate_reviewed_quantity, sad.unit as allocate_unit,
+        sad.produce_date, sad.expire_date, sad.cost_price, sad.is_picked, sad.is_reviewed,
+        sad.remark as allocate_remark, sad.create_time as allocate_create_time,
+        sad.update_time as allocate_update_time,
+        p.product_code as allocate_product_code, p.product_name as allocate_product_name,
+        l.location_code as allocate_location_code
+        FROM wms_shipment_allocate_detail sad
+        LEFT JOIN wms_product p ON sad.product_id = p.id
+        LEFT JOIN wms_location l ON sad.location_id = l.id
+        WHERE sad.id = #{id}
+    </select>
+
+    <delete id="deleteAllocateDetailsByOrderId" parameterType="java.lang.Long">
+        DELETE FROM wms_shipment_allocate_detail WHERE shipment_order_id = #{orderId}
+    </delete>
+
+</mapper>

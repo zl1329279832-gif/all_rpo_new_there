@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wms.mapper.InventoryFreezeMapper">
+
+    <resultMap id="BaseResultMap" type="com.wms.entity.InventoryFreeze">
+        <id column="id" property="id"/>
+        <result column="freeze_no" property="freezeNo"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="location_id" property="locationId"/>
+        <result column="product_id" property="productId"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="freeze_type" property="freezeType"/>
+        <result column="freeze_reason" property="freezeReason"/>
+        <result column="freeze_quantity" property="freezeQuantity"/>
+        <result column="unit" property="unit"/>
+        <result column="freeze_time" property="freezeTime"/>
+        <result column="freeze_operator" property="freezeOperator"/>
+        <result column="unfreeze_time" property="unfreezeTime"/>
+        <result column="unfreeze_operator" property="unfreezeOperator"/>
+        <result column="unfreeze_reason" property="unfreezeReason"/>
+        <result column="status" property="status"/>
+        <result column="business_no" property="businessNo"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="product_code" property="productCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="batch_no_display" property="batchNoDisplay"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="freeze_type_name" property="freezeTypeName"/>
+        <result column="status_name" property="statusName"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, freeze_no, warehouse_id, location_id, product_id, batch_no, freeze_type, freeze_reason,
+        freeze_quantity, unit, freeze_time, freeze_operator, unfreeze_time, unfreeze_operator,
+        unfreeze_reason, status, business_no, remark, create_time, update_time
+    </sql>
+
+    <sql id="Query_Column_List">
+        if.id, if.freeze_no, if.warehouse_id, if.location_id, if.product_id, if.batch_no,
+        if.freeze_type, if.freeze_reason, if.freeze_quantity, if.unit, if.freeze_time,
+        if.freeze_operator, if.unfreeze_time, if.unfreeze_operator, if.unfreeze_reason,
+        if.status, if.business_no, if.remark, if.create_time, if.update_time,
+        p.product_code, p.product_name, if.batch_no as batch_no_display, l.location_code,
+        CASE if.freeze_type
+            WHEN 1 THEN '盘点冻结'
+            WHEN 2 THEN '质检冻结'
+            WHEN 3 THEN '异常冻结'
+            WHEN 4 THEN '其他'
+            ELSE '未知'
+        END as freeze_type_name,
+        CASE if.status
+            WHEN 1 THEN '已冻结'
+            WHEN 2 THEN '已解冻'
+            ELSE '未知'
+        END as status_name
+    </sql>
+
+    <insert id="insert" parameterType="com.wms.entity.InventoryFreeze" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wms_inventory_freeze
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="freezeNo != null">freeze_no,</if>
+            <if test="warehouseId != null">warehouse_id,</if>
+            <if test="locationId != null">location_id,</if>
+            <if test="productId != null">product_id,</if>
+            <if test="batchNo != null">batch_no,</if>
+            <if test="freezeType != null">freeze_type,</if>
+            <if test="freezeReason != null">freeze_reason,</if>
+            <if test="freezeQuantity != null">freeze_quantity,</if>
+            <if test="unit != null">unit,</if>
+            <if test="freezeTime != null">freeze_time,</if>
+            <if test="freezeOperator != null">freeze_operator,</if>
+            <if test="unfreezeTime != null">unfreeze_time,</if>
+            <if test="unfreezeOperator != null">unfreeze_operator,</if>
+            <if test="unfreezeReason != null">unfreeze_reason,</if>
+            <if test="status != null">status,</if>
+            <if test="businessNo != null">business_no,</if>
+            <if test="remark != null">remark,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="freezeNo != null">#{freezeNo},</if>
+            <if test="warehouseId != null">#{warehouseId},</if>
+            <if test="locationId != null">#{locationId},</if>
+            <if test="productId != null">#{productId},</if>
+            <if test="batchNo != null">#{batchNo},</if>
+            <if test="freezeType != null">#{freezeType},</if>
+            <if test="freezeReason != null">#{freezeReason},</if>
+            <if test="freezeQuantity != null">#{freezeQuantity},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="freezeTime != null">#{freezeTime},</if>
+            <if test="freezeOperator != null">#{freezeOperator},</if>
+            <if test="unfreezeTime != null">#{unfreezeTime},</if>
+            <if test="unfreezeOperator != null">#{unfreezeOperator},</if>
+            <if test="unfreezeReason != null">#{unfreezeReason},</if>
+            <if test="status != null">#{status},</if>
+            <if test="businessNo != null">#{businessNo},</if>
+            <if test="remark != null">#{remark},</if>
+        </trim>
+    </insert>
+
+    <update id="updateById" parameterType="com.wms.entity.InventoryFreeze">
+        UPDATE wms_inventory_freeze
+        <set>
+            <if test="freezeNo != null">freeze_no = #{freezeNo},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+            <if test="productId != null">product_id = #{productId},</if>
+            <if test="batchNo != null">batch_no = #{batchNo},</if>
+            <if test="freezeType != null">freeze_type = #{freezeType},</if>
+            <if test="freezeReason != null">freeze_reason = #{freezeReason},</if>
+            <if test="freezeQuantity != null">freeze_quantity = #{freezeQuantity},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="freezeTime != null">freeze_time = #{freezeTime},</if>
+            <if test="freezeOperator != null">freeze_operator = #{freezeOperator},</if>
+            <if test="unfreezeTime != null">unfreeze_time = #{unfreezeTime},</if>
+            <if test="unfreezeOperator != null">unfreeze_operator = #{unfreezeOperator},</if>
+            <if test="unfreezeReason != null">unfreeze_reason = #{unfreezeReason},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="businessNo != null">business_no = #{businessNo},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM wms_inventory_freeze
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_inventory_freeze if
+        LEFT JOIN wms_product p ON if.product_id = p.id
+        LEFT JOIN wms_location l ON if.location_id = l.id
+        WHERE if.freeze_no = #{freezeNo}
+    </select>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Query_Column_List"/>
+        FROM wms_inventory_freeze if
+        LEFT JOIN wms_product p ON if.product_id = p.id
+        LEFT JOIN wms_location l ON if.location_id = l.id
+        <where>
+            <if test="freezeType != null">AND if.freeze_type = #{freezeType}</if>
+            <if test="status != null">AND if.status = #{status}</if>
+            <if test="warehouseId != null">AND if.warehouse_id = #{warehouseId}</if>
+            <if test="productId != null">AND if.product_id = #{productId}</if>
+            <if test="batchNo != null and batchNo != ''">AND if.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>
+        </where>
+        ORDER BY if.freeze_time DESC
+        LIMIT #{query.pageNum}, #{query.pageSize}
+    </select>
+
+</mapper>
