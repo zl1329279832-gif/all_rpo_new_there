@@ -40,6 +40,9 @@ public class User implements Serializable {
     @ApiModelProperty("职位")
     private String position;
 
+    @ApiModelProperty("角色")
+    private String role;
+
     @ApiModelProperty("所属仓库ID")
     private Long warehouseId;
 

@@ -23,6 +23,12 @@ public class Location implements Serializable {
     @ApiModelProperty("库区ID")
     private Long areaId;
 
+    @ApiModelProperty("库区编码")
+    private String zoneCode;
+
+    @ApiModelProperty("库区名称")
+    private String zoneName;
+
     @ApiModelProperty("库位编码")
     private String locationCode;
 
@@ -36,6 +42,9 @@ public class Location implements Serializable {
     private Integer rowNum;
 
     @ApiModelProperty("列号")
+    private Integer colNum;
+
+    @ApiModelProperty("列号（别名）")
     private Integer columnNum;
 
     @ApiModelProperty("层号")
@@ -43,6 +52,9 @@ public class Location implements Serializable {
 
     @ApiModelProperty("最大容量")
     private BigDecimal maxCapacity;
+
+    @ApiModelProperty("已用容量")
+    private BigDecimal usedCapacity;
 
     @ApiModelProperty("当前数量")
     private BigDecimal currentQuantity;

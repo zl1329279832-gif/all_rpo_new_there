@@ -38,8 +38,17 @@ public class InventoryAlert implements Serializable {
     @ApiModelProperty("当前数量")
     private BigDecimal currentQuantity;
 
+    @ApiModelProperty("当前值")
+    private BigDecimal currentValue;
+
     @ApiModelProperty("阈值数量")
     private BigDecimal thresholdQuantity;
+
+    @ApiModelProperty("阈值")
+    private BigDecimal thresholdValue;
+
+    @ApiModelProperty("预警消息")
+    private String alertMessage;
 
     @ApiModelProperty("当前日期")
     private Date currentDate;

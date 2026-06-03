@@ -56,6 +56,9 @@ public class InventoryBatch implements Serializable {
     @ApiModelProperty("入库日期")
     private Date inboundDate;
 
+    @ApiModelProperty("入库单号")
+    private String inboundNo;
+
     @ApiModelProperty("库存状态：1-正常 2-临期 3-过期 4-冻结")
     private Integer inventoryStatus;
 

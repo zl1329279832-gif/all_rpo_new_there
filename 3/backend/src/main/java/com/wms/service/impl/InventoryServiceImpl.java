@@ -277,11 +277,16 @@ public class InventoryServiceImpl implements InventoryService {
     public void reduceInventory(Long batchId, BigDecimal quantity, String businessNo, String operator) {
         String lockKey = "inventory:reduce:" + batchId;
         redisLock.executeWithLock(lockKey, () -> {
-            InventoryBatch batch = inventoryBatchMapper.selectForUpdate(
-                    batch.getWarehouseId(), batch.getProductId(), batch.getBatchNo(), batch.getLocationId());
+            InventoryBatch batch = inventoryBatchMapper.selectById(batchId);
             if (batch == null) {
                 throw new BusinessException(ResultCode.BATCH_NOT_EXIST);
             }
+            InventoryBatch lockedBatch = inventoryBatchMapper.selectForUpdate(
+                    batch.getWarehouseId(), batch.getProductId(), batch.getBatchNo(), batch.getLocationId());
+            if (lockedBatch == null) {
+                throw new BusinessException(ResultCode.BATCH_NOT_EXIST);
+            }
+            batch = lockedBatch;
 
             InventoryState currentState = InventoryState.fromCode(batch.getInventoryStatus());
             inventoryStateMachine.transition(currentState, InventoryEvent.OUTBOUND);
