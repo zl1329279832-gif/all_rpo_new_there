@@ -44,9 +44,6 @@ public interface PickingTaskMapper {
 
     PickingTaskDetail selectDetailById(Long id);
 
-    @Update("UPDATE wms_picking_task_detail SET picked_quantity = #{pickedQuantity}, " +
-            "is_picked = 1, pick_time = NOW(), pick_operator = #{operator}, " +
-            "update_time = NOW() WHERE id = #{id}")
     int confirmPickingDetail(@Param("id") Long id,
                              @Param("pickedQuantity") BigDecimal pickedQuantity,
                              @Param("operator") String operator);

@@ -311,8 +311,8 @@
             final_count = #{finalCount},
             diff_quantity = #{finalCount} - system_quantity,
             diff_type = CASE 
-                WHEN #{finalCount} > system_quantity THEN 1
-                WHEN #{finalCount} < system_quantity THEN 2
+                WHEN #{finalCount} &gt; system_quantity THEN 1
+                WHEN #{finalCount} &lt; system_quantity THEN 2
                 ELSE 3
             END,
             is_counted = 1,

@@ -37,7 +37,7 @@
         l.column_num, l.layer_num, l.max_capacity, l.current_quantity, l.available_capacity, l.status,
         l.remark, l.create_time, l.update_time, l.create_by, l.update_by,
         w.warehouse_name, a.area_name,
-        CASE WHEN l.max_capacity > 0 THEN ROUND(l.current_quantity / l.max_capacity * 100, 2) ELSE 0 END as usage_rate
+        CASE WHEN l.max_capacity &gt; 0 THEN ROUND(l.current_quantity / l.max_capacity * 100, 2) ELSE 0 END as usage_rate
     </sql>
 
     <insert id="insert" parameterType="com.wms.entity.Location" useGeneratedKeys="true" keyProperty="id">
