@@ -1,0 +1,72 @@
+# 虚拟环境
+venv/
+env/
+.env
+
+# Python缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# SQLite数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# 附件目录
+attachments/
+uploads/
+
+# 导出报告
+reports/
+exports/
+*.pdf
+*.docx
+*.xlsx
+*.csv
+
+# 备份文件
+backup/
+backups/
+*.bak
+*.zip
+*.tar.gz
+
+# 打包产物
+dist/
+build/
+*.spec
+*.exe
+
+# 日志文件
+logs/
+*.log
+
+# 编辑器配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 临时文件
+*.tmp
+*.temp
