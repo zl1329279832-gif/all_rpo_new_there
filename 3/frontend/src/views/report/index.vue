@@ -105,39 +105,42 @@
         </el-tab-pane>
 
         <el-tab-pane label="盘点差异" name="stocktake">
-          <div class="chart-header">
-            <span class="chart-title">盘点差异统计</span>
-          </div>
-          <el-table :data="stocktakeData" v-loading="loading" border stripe>
-            <el-table-column prop="warehouseName" label="仓库" width="150" />
-            <el-table-column prop="productName" label="商品名称" width="150" />
-            <el-table-column prop="batchNo" label="批次号" width="150" />
-            <el-table-column prop="systemQty" label="系统数量" width="120" align="right" />
-            <el-table-column prop="actualQty" label="实际数量" width="120" align="right" />
-            <el-table-column label="差异数量" width="120" align="right">
-              <template #default="{ row }">
-                <span :class="row.diffQty > 0 ? 'profit' : 'loss'">
-                  {{ row.diffQty > 0 ? '+' : '' }}{{ row.diffQty }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column label="差异金额" width="120" align="right">
-              <template #default="{ row }">
-                <span :class="row.diffAmount > 0 ? 'profit' : 'loss'">
-                  ¥{{ row.diffAmount > 0 ? '+' : '' }}{{ row.diffAmount.toFixed(2) }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column label="差异类型" width="100">
-              <template #default="{ row }">
-                <el-tag :type="row.diffQty > 0 ? 'success' : 'danger'">
-                  {{ row.diffQty > 0 ? '盘盈' : '盘亏' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="stocktakeTime" label="盘点时间" width="180" />
-          </el-table>
-          <div class="stocktake-summary">
+          <div class="stocktake-tab-container">
+            <div class="chart-header">
+              <span class="chart-title">盘点差异统计</span>
+            </div>
+            <div class="stocktake-table-wrapper">
+              <el-table :data="stocktakeData" v-loading="loading" border stripe height="100%">
+                <el-table-column prop="warehouseName" label="仓库" width="150" />
+                <el-table-column prop="productName" label="商品名称" width="150" />
+                <el-table-column prop="batchNo" label="批次号" width="150" />
+                <el-table-column prop="systemQty" label="系统数量" width="120" align="right" />
+                <el-table-column prop="actualQty" label="实际数量" width="120" align="right" />
+                <el-table-column label="差异数量" width="120" align="right">
+                  <template #default="{ row }">
+                    <span :class="row.diffQty > 0 ? 'profit' : 'loss'">
+                      {{ row.diffQty > 0 ? '+' : '' }}{{ row.diffQty }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="差异金额" width="120" align="right">
+                  <template #default="{ row }">
+                    <span :class="row.diffAmount > 0 ? 'profit' : 'loss'">
+                      ¥{{ row.diffAmount > 0 ? '+' : '' }}{{ row.diffAmount.toFixed(2) }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="差异类型" width="100">
+                  <template #default="{ row }">
+                    <el-tag :type="row.diffQty > 0 ? 'success' : 'danger'">
+                      {{ row.diffQty > 0 ? '盘盈' : '盘亏' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="stocktakeTime" label="盘点时间" width="180" />
+              </el-table>
+            </div>
+            <div class="stocktake-summary">
             <el-row :gutter="20">
               <el-col :span="8">
                 <div class="summary-card profit">
@@ -565,6 +568,9 @@ const handleResize = () => {
 
 onMounted(() => {
   handleTimeRangeChange()
+  setTimeout(() => {
+    handleTabChange(activeTab.value)
+  }, 200)
   window.addEventListener('resize', handleResize)
 })
 
@@ -686,6 +692,20 @@ onUnmounted(() => {
 
 :deep(.el-tabs__content) {
   padding-top: 10px;
+  height: calc(100vh - 400px);
+  overflow-y: auto;
+}
+
+.stocktake-tab-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.stocktake-table-wrapper {
+  flex: 1;
+  min-height: 400px;
+  overflow: hidden;
 }
 
 .profit {
