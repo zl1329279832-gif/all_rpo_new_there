@@ -14,7 +14,7 @@ public class QcRecordQueryDTO {
 
     private String keyword;
 
-    private Integer qcType;
+    private String qcType;
 
     private Integer qcResult;
 

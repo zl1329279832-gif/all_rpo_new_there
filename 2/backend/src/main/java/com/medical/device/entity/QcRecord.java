@@ -24,10 +24,9 @@ public class QcRecord {
     @TableField("qc_date")
     private LocalDate qcDate;
 
-    @Min(value = 0, message = "质控类型值不能小于0")
-    @Max(value = 10, message = "质控类型值不能大于10")
+    @Size(max = 100, message = "质控类型长度不能超过100个字符")
     @TableField("qc_type")
-    private Integer qcType;
+    private String qcType;
 
     @TableField("executor_id")
     private Long executorId;

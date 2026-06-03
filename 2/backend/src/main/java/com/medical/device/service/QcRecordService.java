@@ -26,35 +26,11 @@ public class QcRecordService {
     private final DeviceMapper deviceMapper;
 
     public PageResult<QcRecord> listRecords(int pageNum, int pageSize, String keyword,
-                                            Integer qcResult, Integer qcType, Long deviceId,
+                                            Integer qcResult, String qcType, Long deviceId,
                                             LocalDate startDate, LocalDate endDate) {
         Page<QcRecord> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<QcRecord> wrapper = new LambdaQueryWrapper<>();
-
-        if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w.like(QcRecord::getExecutorName, keyword)
-                    .or().like(QcRecord::getQcData, keyword)
-                    .or().like(QcRecord::getDeviationDescription, keyword));
-        }
-        if (qcResult != null) {
-            wrapper.eq(QcRecord::getQcResult, qcResult);
-        }
-        if (qcType != null) {
-            wrapper.eq(QcRecord::getQcType, qcType);
-        }
-        if (deviceId != null) {
-            wrapper.eq(QcRecord::getDeviceId, deviceId);
-        }
-        if (startDate != null) {
-            wrapper.ge(QcRecord::getQcDate, startDate);
-        }
-        if (endDate != null) {
-            wrapper.le(QcRecord::getQcDate, endDate);
-        }
-
-        wrapper.orderByDesc(QcRecord::getQcDate, QcRecord::getId);
-        IPage<QcRecord> result = qcRecordMapper.selectPage(page, wrapper);
-
+        IPage<QcRecord> result = qcRecordMapper.selectPageWithDevice(
+                page, keyword, qcResult, qcType, deviceId, startDate, endDate);
         return PageResult.of(result.getRecords(), result.getTotal(), pageNum, pageSize);
     }
 

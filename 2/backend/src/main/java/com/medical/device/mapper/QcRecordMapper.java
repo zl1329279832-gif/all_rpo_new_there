@@ -30,7 +30,7 @@ public interface QcRecordMapper extends BaseMapper<QcRecord> {
     IPage<QcRecord> selectPageWithDevice(IPage<QcRecord> page,
                                          @Param("keyword") String keyword,
                                          @Param("qcResult") Integer qcResult,
-                                         @Param("qcType") Integer qcType,
+                                         @Param("qcType") String qcType,
                                          @Param("deviceId") Long deviceId,
                                          @Param("startDate") LocalDate startDate,
                                          @Param("endDate") LocalDate endDate);
