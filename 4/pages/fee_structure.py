@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from utils.error_handler import ErrorHandler
 
 
 class FeeStructurePage:
@@ -9,31 +10,40 @@ class FeeStructurePage:
 
     def render(self):
         if not st.session_state.get('data_loaded', False):
-            st.warning("请先导入数据")
+            st.warning("⚠️ 请先导入数据")
             return
 
         st.header("💰 费用结构分析")
 
-        fee_structure = self.metrics.get_fee_structure()
-        conv_data = self.metrics.get_exam_conversion_rate()
+        try:
+            fee_structure = self.metrics.get_fee_structure()
+            conv_data = self.metrics.get_exam_conversion_rate()
 
-        self._render_fee_overview(fee_structure)
+            if not fee_structure and not conv_data:
+                st.warning("⚠️ 暂无费用分析数据，请检查是否已上传就诊记录、检查项目、药品费用等必要数据")
+                return
 
-        st.divider()
+            self._render_fee_overview(fee_structure)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            self._render_fee_pie_chart(fee_structure)
-        with col2:
-            self._render_conversion_rate(conv_data)
+            st.divider()
 
-        st.divider()
+            col1, col2 = st.columns(2)
+            with col1:
+                self._render_fee_pie_chart(fee_structure)
+            with col2:
+                self._render_conversion_rate(conv_data)
 
-        col3, col4 = st.columns(2)
-        with col3:
-            self._render_exam_items(fee_structure)
-        with col4:
-            self._render_drug_categories(fee_structure)
+            st.divider()
+
+            col3, col4 = st.columns(2)
+            with col3:
+                self._render_exam_items(fee_structure)
+            with col4:
+                self._render_drug_categories(fee_structure)
+
+        except Exception as e:
+            error_msg = ErrorHandler.translate_error(e, "费用结构分析")
+            ErrorHandler.display_error(f"❌ 费用结构分析失败：{error_msg}")
 
     def _render_fee_overview(self, fee_structure):
         st.subheader("费用概览")
