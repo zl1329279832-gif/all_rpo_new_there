@@ -1,5 +1,6 @@
 export type ZoneType = 'inbound' | 'storage' | 'outbound' | 'picking'
 export type DeviceType = 'stacker' | 'conveyor' | 'elevator' | 'scanner'
+export type LocationStatus = 'empty' | 'occupied' | 'inbound' | 'outbound' | 'fault' | 'maintenance'
 export type DeviceStatus = 'running' | 'idle' | 'error' | 'maintenance'
 export type TaskType = 'inbound' | 'outbound' | 'transfer'
 export type CargoStatus = 'normal' | 'reserved' | 'damaged'
@@ -37,6 +38,7 @@ export interface LocationData {
   currentCargo?: CargoData
   position: Vector3
   occupied: boolean
+  status?: LocationStatus
 }
 
 export interface DeviceData {

@@ -93,6 +93,35 @@ function handleSpeedChange(delta: number) {
           <span>路径显示</span>
         </label>
       </div>
+      <div class="button-group" style="margin-top: 8px;">
+        <button
+          class="toolbar-btn"
+          :class="{ active: sceneStore.showLabels }"
+          @click="sceneStore.toggleLabels()"
+          title="标签显示"
+        >
+          <span class="icon">🏷️</span>
+          <span class="text">标签</span>
+        </button>
+        <button
+          class="toolbar-btn"
+          :class="{ active: sceneStore.showPaths }"
+          @click="sceneStore.togglePaths()"
+          title="路径显示"
+        >
+          <span class="icon">🔀</span>
+          <span class="text">路径</span>
+        </button>
+        <button
+          class="toolbar-btn"
+          :class="{ active: sceneStore.animationPaused }"
+          @click="sceneStore.toggleAnimation()"
+          title="暂停动画"
+        >
+          <span class="icon">{{ sceneStore.animationPaused ? '▶️' : '⏸️' }}</span>
+          <span class="text">{{ sceneStore.animationPaused ? '继续' : '暂停' }}</span>
+        </button>
+      </div>
     </div>
 
     <div class="toolbar-section">
@@ -176,6 +205,11 @@ function handleSpeedChange(delta: number) {
 
   &:active {
     transform: scale(0.98);
+  }
+
+  &.active {
+    background: rgba(22, 93, 255, 0.4);
+    border-color: #165DFF;
   }
 
   .icon {

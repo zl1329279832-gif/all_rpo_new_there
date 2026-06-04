@@ -1,4 +1,4 @@
-import type { LocationData, ZoneType } from '../types'
+import type { LocationData, LocationStatus, ZoneType } from '../types'
 
 const RACK_CONFIG = {
   bayWidth: 1.2,
@@ -20,6 +20,15 @@ function generateLocations(): LocationData[] {
   const locations: LocationData[] = []
   let rackIndex = 1
 
+  function randomStatus(occupied: boolean): { status: LocationStatus; occupied: boolean } {
+    const rand = Math.random()
+    if (rand < 0.01) return { status: 'fault', occupied: true }
+    if (rand < 0.02) return { status: 'maintenance', occupied: true }
+    if (rand < 0.05) return { status: 'outbound', occupied: true }
+    if (rand < 0.10) return { status: 'inbound', occupied: true }
+    return { status: occupied ? 'occupied' : 'empty', occupied }
+  }
+
   RACK_GROUPS.forEach((group) => {
     for (let row = 0; row < group.rows; row++) {
       const rackId = `R${String(rackIndex).padStart(2, '0')}`
@@ -29,6 +38,7 @@ function generateLocations(): LocationData[] {
         for (let level = 0; level < RACK_CONFIG.levels; level++) {
           const locationId = `${rackId}-${String(bay + 1).padStart(2, '0')}-${String(level + 1).padStart(2, '0')}`
           const occupied = Math.random() > 0.4
+          const { status, occupied: finalOccupied } = randomStatus(occupied)
 
           const bayLocalX = bay * RACK_CONFIG.bayWidth - (RACK_CONFIG.bays * RACK_CONFIG.bayWidth) / 2 + RACK_CONFIG.bayWidth / 2
           const localX = rackLocalX + bayLocalX
@@ -56,7 +66,8 @@ function generateLocations(): LocationData[] {
               y: localY,
               z: worldZ,
             },
-            occupied,
+            occupied: finalOccupied,
+            status,
           })
         }
       }
@@ -65,6 +76,8 @@ function generateLocations(): LocationData[] {
   })
 
   for (let i = 0; i < 10; i++) {
+    const occupied = Math.random() > 0.5
+    const { status, occupied: finalOccupied } = randomStatus(occupied)
     locations.push({
       id: `INB-${String(i + 1).padStart(2, '0')}`,
       zone: 'inbound',
@@ -77,11 +90,14 @@ function generateLocations(): LocationData[] {
         y: 0.05,
         z: -15,
       },
-      occupied: Math.random() > 0.5,
+      occupied: finalOccupied,
+      status,
     })
   }
 
   for (let i = 0; i < 10; i++) {
+    const occupied = Math.random() > 0.6
+    const { status, occupied: finalOccupied } = randomStatus(occupied)
     locations.push({
       id: `OUT-${String(i + 1).padStart(2, '0')}`,
       zone: 'outbound',
@@ -94,11 +110,14 @@ function generateLocations(): LocationData[] {
         y: 0.05,
         z: 15,
       },
-      occupied: Math.random() > 0.6,
+      occupied: finalOccupied,
+      status,
     })
   }
 
   for (let i = 0; i < 8; i++) {
+    const occupied = Math.random() > 0.3
+    const { status, occupied: finalOccupied } = randomStatus(occupied)
     locations.push({
       id: `PCK-${String(i + 1).padStart(2, '0')}`,
       zone: 'picking',
@@ -111,7 +130,8 @@ function generateLocations(): LocationData[] {
         y: 0.05,
         z: -8 + i * 2,
       },
-      occupied: Math.random() > 0.3,
+      occupied: finalOccupied,
+      status,
     })
   }
 

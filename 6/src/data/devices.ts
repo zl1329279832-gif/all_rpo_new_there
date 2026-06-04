@@ -33,8 +33,9 @@ export const deviceData: DeviceData[] = [
     id: 'CONV-003',
     type: 'conveyor',
     name: '左侧输送线',
-    status: 'idle',
+    status: 'error',
     position: { x: -18, y: 0.75, z: 0 },
+    errorCode: 'E-0042',
   },
   {
     id: 'CONV-004',
@@ -47,7 +48,7 @@ export const deviceData: DeviceData[] = [
     id: 'ELEV-001',
     type: 'elevator',
     name: '提升机',
-    status: 'idle',
+    status: 'maintenance',
     position: { x: 0, y: 0, z: -15 },
   },
   {

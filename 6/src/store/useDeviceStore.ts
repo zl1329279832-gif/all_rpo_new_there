@@ -33,6 +33,10 @@ export const useDeviceStore = defineStore('device', () => {
     selectedDeviceId.value = id
   }
 
+  function clearSelection() {
+    selectedDeviceId.value = null
+  }
+
   function updateDeviceStatus(id: string, status: DeviceData['status']) {
     const device = devices.value.find(d => d.id === id)
     if (device) {
@@ -72,6 +76,7 @@ export const useDeviceStore = defineStore('device', () => {
     scanners,
     deviceStats,
     selectDevice,
+    clearSelection,
     updateDeviceStatus,
     setAnimationSpeed,
     toggleAnimationPlaying,

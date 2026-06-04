@@ -2,7 +2,7 @@ import * as THREE from 'three'
 
 export class MaterialSystem {
   private static instance: MaterialSystem
-  
+
   rackMaterial!: THREE.MeshStandardMaterial
   rackBeamMaterial!: THREE.MeshStandardMaterial
   metalMaterial!: THREE.MeshStandardMaterial
@@ -10,6 +10,7 @@ export class MaterialSystem {
   plasticMaterial!: THREE.MeshStandardMaterial
   plasticYellowMaterial!: THREE.MeshStandardMaterial
   plasticGrayMaterial!: THREE.MeshStandardMaterial
+  plasticBoxMaterial!: THREE.MeshStandardMaterial
   woodMaterial!: THREE.MeshStandardMaterial
   floorMaterial!: THREE.MeshStandardMaterial
   glassMaterial!: THREE.MeshStandardMaterial
@@ -21,6 +22,8 @@ export class MaterialSystem {
   conveyorRollerMaterial!: THREE.MeshStandardMaterial
   fenceMaterial!: THREE.MeshStandardMaterial
   cabinetMaterial!: THREE.MeshStandardMaterial
+  chainMaterial!: THREE.MeshStandardMaterial
+  rubberMaterial!: THREE.MeshStandardMaterial
   ledRed!: THREE.MeshStandardMaterial
   ledGreen!: THREE.MeshStandardMaterial
   ledYellow!: THREE.MeshStandardMaterial
@@ -31,6 +34,9 @@ export class MaterialSystem {
   locationEmptyMaterial!: THREE.MeshBasicMaterial
   locationOccupiedMaterial!: THREE.MeshBasicMaterial
   locationSelectedMaterial!: THREE.MeshBasicMaterial
+
+  private boxMaterialCache!: Map<number, THREE.MeshStandardMaterial>
+  private emissiveMaterialCache!: Map<number, THREE.MeshStandardMaterial>
 
   private constructor() {
     this.initMaterials()
@@ -44,28 +50,32 @@ export class MaterialSystem {
   }
 
   private initMaterials(): void {
+    this.boxMaterialCache = new Map()
+    this.emissiveMaterialCache = new Map()
+
     this.rackMaterial = new THREE.MeshStandardMaterial({
-      color: 0x165DFF,
+      color: 0x1A5CFF,
+      metalness: 0.65,
+      roughness: 0.35,
+      envMapIntensity: 1.2,
+    })
+
+    this.rackBeamMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0D3DB8,
       metalness: 0.6,
       roughness: 0.4,
     })
 
-    this.rackBeamMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0E42D2,
-      metalness: 0.5,
-      roughness: 0.5,
-    })
-
     this.metalMaterial = new THREE.MeshStandardMaterial({
-      color: 0x86909C,
-      metalness: 0.8,
-      roughness: 0.3,
+      color: 0x9CA3AF,
+      metalness: 0.85,
+      roughness: 0.2,
     })
 
     this.metalDarkMaterial = new THREE.MeshStandardMaterial({
-      color: 0x4E5969,
-      metalness: 0.7,
-      roughness: 0.4,
+      color: 0x4B5563,
+      metalness: 0.75,
+      roughness: 0.35,
     })
 
     this.plasticMaterial = new THREE.MeshStandardMaterial({
@@ -86,6 +96,12 @@ export class MaterialSystem {
       roughness: 0.7,
     })
 
+    this.plasticBoxMaterial = new THREE.MeshStandardMaterial({
+      color: 0xD4A574,
+      metalness: 0.05,
+      roughness: 0.7,
+    })
+
     this.woodMaterial = new THREE.MeshStandardMaterial({
       color: 0x8B5A2B,
       metalness: 0.0,
@@ -93,9 +109,9 @@ export class MaterialSystem {
     })
 
     this.floorMaterial = new THREE.MeshStandardMaterial({
-      color: 0x2A2A2A,
-      metalness: 0.1,
-      roughness: 0.9,
+      color: 0x374151,
+      metalness: 0.3,
+      roughness: 0.6,
     })
 
     this.glassMaterial = new THREE.MeshPhysicalMaterial({
@@ -137,9 +153,9 @@ export class MaterialSystem {
     })
 
     this.conveyorRollerMaterial = new THREE.MeshStandardMaterial({
-      color: 0x3A3A3A,
-      metalness: 0.7,
-      roughness: 0.3,
+      color: 0x1F2937,
+      metalness: 0.05,
+      roughness: 0.95,
     })
 
     this.fenceMaterial = new THREE.MeshStandardMaterial({
@@ -154,28 +170,40 @@ export class MaterialSystem {
       roughness: 0.7,
     })
 
+    this.chainMaterial = new THREE.MeshStandardMaterial({
+      color: 0x6B7280,
+      metalness: 0.9,
+      roughness: 0.15,
+    })
+
+    this.rubberMaterial = new THREE.MeshStandardMaterial({
+      color: 0x111827,
+      metalness: 0.02,
+      roughness: 0.98,
+    })
+
     this.ledRed = new THREE.MeshStandardMaterial({
       color: 0xF53F3F,
       emissive: 0xF53F3F,
-      emissiveIntensity: 0.5,
+      emissiveIntensity: 0.8,
     })
 
     this.ledGreen = new THREE.MeshStandardMaterial({
       color: 0x00B42A,
       emissive: 0x00B42A,
-      emissiveIntensity: 0.5,
+      emissiveIntensity: 0.8,
     })
 
     this.ledYellow = new THREE.MeshStandardMaterial({
       color: 0xFF7D00,
       emissive: 0xFF7D00,
-      emissiveIntensity: 0.5,
+      emissiveIntensity: 0.8,
     })
 
     this.ledBlue = new THREE.MeshStandardMaterial({
       color: 0x165DFF,
       emissive: 0x165DFF,
-      emissiveIntensity: 0.5,
+      emissiveIntensity: 0.8,
     })
 
     this.warningMaterial = new THREE.MeshStandardMaterial({
@@ -214,19 +242,29 @@ export class MaterialSystem {
   }
 
   getBoxMaterialByColor(color: number): THREE.MeshStandardMaterial {
-    return new THREE.MeshStandardMaterial({
+    const cached = this.boxMaterialCache.get(color)
+    if (cached) return cached
+
+    const material = new THREE.MeshStandardMaterial({
       color,
       metalness: 0.0,
       roughness: 0.85,
     })
+    this.boxMaterialCache.set(color, material)
+    return material
   }
 
   getEmissiveMaterial(color: number): THREE.MeshStandardMaterial {
-    return new THREE.MeshStandardMaterial({
+    const cached = this.emissiveMaterialCache.get(color)
+    if (cached) return cached
+
+    const material = new THREE.MeshStandardMaterial({
       color,
       emissive: color,
       emissiveIntensity: 0.5,
     })
+    this.emissiveMaterialCache.set(color, material)
+    return material
   }
 
   dispose(): void {
@@ -235,5 +273,9 @@ export class MaterialSystem {
         material.dispose()
       }
     })
+    this.boxMaterialCache.forEach((m) => m.dispose())
+    this.boxMaterialCache.clear()
+    this.emissiveMaterialCache.forEach((m) => m.dispose())
+    this.emissiveMaterialCache.clear()
   }
 }
