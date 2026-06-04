@@ -48,7 +48,7 @@ export class WarehouseScene {
 
   private init(): void {
     this.scene.background = new THREE.Color(0x1a1a2e)
-    this.scene.fog = new THREE.Fog(0x1a1a2e, 40, 80)
+    this.scene.fog = new THREE.FogExp2(0x1a1a2e, 0.012)
 
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
@@ -63,7 +63,7 @@ export class WarehouseScene {
     this.camera.lookAt(0, 0, 0)
 
     this.controls.enableDamping = true
-    this.controls.dampingFactor = 0.05
+    this.controls.dampingFactor = 0.08
     this.controls.minDistance = 5
     this.controls.maxDistance = 60
     this.controls.maxPolarAngle = Math.PI / 2.2
@@ -290,15 +290,18 @@ export class WarehouseScene {
 
   private buildLocationMarkers(locationsData: LocationData[]): void {
     locationsData.forEach((location) => {
+      if (!location.id.startsWith('R')) return
+
       const marker = this.modelFactory.createLocationMarker(
         location.id,
         0.9,
-        0.75,
+        0.9,
         location.occupied
       )
+      const deckY = (location.level - 1) * 0.8 + 0.44
       marker.position.set(
         location.position.x,
-        location.position.y - 0.37,
+        deckY + 0.02,
         location.position.z
       )
       this.locationMarkers.set(location.id, marker)
@@ -334,12 +337,13 @@ export class WarehouseScene {
       const boxColors = [0xD4A574, 0x4A90D9, 0xE25C5C, 0x6BCB77]
       const colorIndex = Math.floor(Math.random() * boxColors.length)
       const box = this.modelFactory.createBox('medium', true, boxColors[colorIndex])
-      box.position.y = 0.13
+      box.position.y = 0.11
       cargoGroup.add(box)
 
+      const deckY = (location.level - 1) * 0.8 + 0.44 + 0.02
       cargoGroup.position.set(
         location.position.x,
-        location.position.y - 0.38,
+        deckY,
         location.position.z
       )
 

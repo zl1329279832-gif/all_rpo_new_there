@@ -6,7 +6,7 @@ export class ModelFactory {
   private materials: MaterialSystem
   private readonly RACK_CONFIG = {
     bayWidth: 1.2,
-    bayDepth: 1.0,
+    bayDepth: 1.2,
     levelHeight: 0.8,
     columnSize: 0.08,
     beamSize: 0.06,
@@ -26,33 +26,33 @@ export class ModelFactory {
     const totalWidth = bays * bayWidth
     const totalHeight = levels * levelHeight
 
+    const columnGeo = new THREE.BoxGeometry(columnSize, totalHeight, columnSize)
     for (let bay = 0; bay <= bays; bay++) {
-      const column = new THREE.Mesh(
-        new THREE.BoxGeometry(columnSize, totalHeight, columnSize),
-        this.materials.rackMaterial
-      )
+      const column = new THREE.Mesh(columnGeo, this.materials.rackMaterial)
       column.position.set(bay * bayWidth - totalWidth / 2 + columnSize / 2, totalHeight / 2, 0)
-      column.castShadow = true
+      column.castShadow = false
       column.receiveShadow = true
       rack.add(column)
     }
 
+    const beamGeo = new THREE.BoxGeometry(bayWidth, beamSize, beamSize)
     for (let level = 1; level <= levels; level++) {
       for (let bay = 0; bay < bays; bay++) {
-        const beamFront = new THREE.Mesh(
-          new THREE.BoxGeometry(bayWidth, beamSize, beamSize),
-          this.materials.rackBeamMaterial
-        )
+        const beamFront = new THREE.Mesh(beamGeo, this.materials.rackBeamMaterial)
         beamFront.position.set(
           bay * bayWidth - totalWidth / 2 + bayWidth / 2,
           level * levelHeight - levelHeight / 2,
           bayDepth / 2 - beamSize / 2
         )
-        beamFront.castShadow = true
+        beamFront.castShadow = false
         rack.add(beamFront)
 
-        const beamBack = beamFront.clone()
-        beamBack.position.z = -bayDepth / 2 + beamSize / 2
+        const beamBack = new THREE.Mesh(beamGeo, this.materials.rackBeamMaterial)
+        beamBack.position.set(
+          bay * bayWidth - totalWidth / 2 + bayWidth / 2,
+          level * levelHeight - levelHeight / 2,
+          -bayDepth / 2 + beamSize / 2
+        )
         rack.add(beamBack)
 
         const deck = new THREE.Mesh(
@@ -65,20 +65,8 @@ export class ModelFactory {
           0
         )
         deck.receiveShadow = true
+        deck.castShadow = false
         rack.add(deck)
-      }
-    }
-
-    const uprightGeometry = new THREE.BoxGeometry(0.03, levelHeight * 0.9, bayDepth * 0.95)
-    for (let level = 0; level < levels; level++) {
-      for (let bay = 0; bay <= bays; bay++) {
-        const upright = new THREE.Mesh(uprightGeometry, this.materials.rackMaterial)
-        upright.position.set(
-          bay * bayWidth - totalWidth / 2,
-          level * levelHeight + levelHeight / 2,
-          0
-        )
-        rack.add(upright)
       }
     }
 
@@ -314,14 +302,15 @@ export class ModelFactory {
     pallet.name = 'pallet'
 
     const palletWidth = 0.9
-    const palletDepth = 0.8
-    const palletHeight = 0.12
+    const palletDepth = 0.9
+    const palletHeight = 0.10
 
     const topDeck = new THREE.Mesh(
       new THREE.BoxGeometry(palletWidth, 0.02, palletDepth),
       this.materials.woodMaterial
     )
     topDeck.position.y = palletHeight - 0.01
+    topDeck.castShadow = false
     topDeck.receiveShadow = true
     pallet.add(topDeck)
 
@@ -330,6 +319,7 @@ export class ModelFactory {
       this.materials.woodMaterial
     )
     bottomDeck.position.y = 0.01
+    bottomDeck.castShadow = false
     pallet.add(bottomDeck)
 
     if (type === 'chuan') {
@@ -338,11 +328,11 @@ export class ModelFactory {
       stringerPositions.forEach((x) => {
         const stringer = new THREE.Mesh(stringerGeometry, this.materials.woodMaterial)
         stringer.position.set(x, palletHeight / 2, 0)
-        stringer.castShadow = true
+        stringer.castShadow = false
         pallet.add(stringer)
       })
     } else if (type === 'nine') {
-      const blockGeometry = new THREE.BoxGeometry(0.15, palletHeight - 0.04, 0.15)
+      const blockGeometry = new THREE.BoxGeometry(0.12, palletHeight - 0.04, 0.12)
       const blockPositions = [
         [-0.35, -0.35], [0, -0.35], [0.35, -0.35],
         [-0.35, 0], [0, 0], [0.35, 0],
@@ -351,7 +341,7 @@ export class ModelFactory {
       blockPositions.forEach(([x, z]) => {
         const block = new THREE.Mesh(blockGeometry, this.materials.woodMaterial)
         block.position.set(x, palletHeight / 2, z)
-        block.castShadow = true
+        block.castShadow = false
         pallet.add(block)
       })
     } else {
@@ -360,7 +350,7 @@ export class ModelFactory {
       blockPositions.forEach((x) => {
         const block = new THREE.Mesh(blockGeometry, this.materials.woodMaterial)
         block.position.set(x, palletHeight / 2, 0)
-        block.castShadow = true
+        block.castShadow = false
         pallet.add(block)
       })
     }
@@ -373,8 +363,8 @@ export class ModelFactory {
     box.name = 'box'
 
     const dimensions = {
-      small: { w: 0.25, h: 0.2, d: 0.25 },
-      medium: { w: 0.4, h: 0.3, d: 0.4 },
+      small: { w: 0.3, h: 0.2, d: 0.3 },
+      medium: { w: 0.5, h: 0.3, d: 0.5 },
       large: { w: 0.6, h: 0.45, d: 0.6 },
     }
 
@@ -388,33 +378,20 @@ export class ModelFactory {
       material
     )
     body.position.y = h / 2
-    body.castShadow = true
+    body.castShadow = false
     body.receiveShadow = true
     box.add(body)
-
-    const tapeGeometry = new THREE.BoxGeometry(0.03, h + 0.002, d + 0.002)
-    const tapeMaterial = new THREE.MeshStandardMaterial({
-      color: 0xcccccc,
-      transparent: true,
-      opacity: 0.8,
-    })
-
-    const tape1 = new THREE.Mesh(tapeGeometry, tapeMaterial)
-    tape1.position.set(-w / 4, h / 2, 0)
-    box.add(tape1)
-
-    const tape2 = tape1.clone()
-    tape2.position.x = w / 4
-    box.add(tape2)
 
     if (hasLabel) {
       const labelGeometry = new THREE.PlaneGeometry(w * 0.3, h * 0.25)
       const labelMaterial = new THREE.MeshBasicMaterial({
         color: 0xffffff,
+        transparent: true,
+        opacity: 0.8,
         side: THREE.DoubleSide,
       })
       const label = new THREE.Mesh(labelGeometry, labelMaterial)
-      label.position.set(0, h * 0.3, d / 2 + 0.002)
+      label.position.set(0, h / 2, d / 2 + 0.001)
       box.add(label)
     }
 
