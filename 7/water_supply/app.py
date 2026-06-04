@@ -64,12 +64,6 @@ def init_session_state():
         st.session_state.critical_nodes = None
     if "shortage_nodes" not in st.session_state:
         st.session_state.shortage_nodes = None
-    if "last_min_pressure" not in st.session_state:
-        st.session_state.last_min_pressure = None
-    if "last_leak_coeff" not in st.session_state:
-        st.session_state.last_leak_coeff = None
-    if "last_leak_exp" not in st.session_state:
-        st.session_state.last_leak_exp = None
 
 
 def render_sidebar():
@@ -129,12 +123,18 @@ def render_sidebar():
     )
     leak_exp = st.sidebar.slider("漏损压力指数", 0.3, 1.0, 0.5, 0.05, key="leak_exp_slider")
 
-    auto_recompute = st.sidebar.checkbox("实时更新（参数变化时自动重新计算）", value=True, key="auto_recompute_checkbox")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 当前参数")
+    st.sidebar.info(
+        f"最小压力: **{min_pressure} m**\n\n"
+        f"漏损系数: **{leak_coeff:.1e}**\n\n"
+        f"漏损指数: **{leak_exp:.2f}**"
+    )
 
-    return config, min_pressure, leak_coeff, leak_exp, auto_recompute
+    return config, min_pressure, leak_coeff, leak_exp
 
 
-def render_overview(config, result):
+def render_overview(config, result, min_pressure):
     st.header("管网概览")
 
     col1, col2, col3, col4 = st.columns(4)
@@ -156,14 +156,14 @@ def render_overview(config, result):
 
     tab_net, tab_data = st.tabs(["管网拓扑", "节点数据"])
     with tab_net:
-        fig = plot_network_graph(config, result)
+        fig = plot_network_graph(config, result, min_pressure)
         st.pyplot(fig)
     with tab_data:
         df = summarize_results(config, result)
         st.dataframe(df, use_container_width=True)
 
 
-def render_hydraulic(result):
+def render_hydraulic(result, min_pressure):
     st.header("水力计算结果")
 
     col1, col2 = st.columns(2)
@@ -195,7 +195,7 @@ def render_hydraulic(result):
 
     tab_p, tab_f = st.tabs(["压力分布", "流量分布"])
     with tab_p:
-        fig = plot_pressure_distribution(result)
+        fig = plot_pressure_distribution(result, min_pressure=min_pressure)
         st.pyplot(fig)
     with tab_f:
         fig = plot_flow_distribution(result)
@@ -209,13 +209,25 @@ def render_simulation(config, result, leak_coeff, leak_exp, min_pressure):
 
     with tab_leak:
         st.subheader("漏损场景模拟")
+        auto_preview = st.checkbox("实时预览漏损效果", value=True, key="leak_auto_preview")
         leak_nodes = st.multiselect(
             "选择漏损节点",
             [n.node_id for n in config.nodes if not n.is_source],
             default=[n.node_id for n in config.nodes if not n.is_source][:3],
             key="leak_nodes",
         )
-        if st.button("运行漏损模拟", key="btn_leak"):
+
+        if auto_preview and leak_nodes:
+            with st.spinner("正在计算漏损场景..."):
+                sr = simulate_leakage(
+                    config,
+                    baseline=result,
+                    leak_nodes=leak_nodes,
+                    leak_coefficient=leak_coeff,
+                    pressure_exponent=leak_exp,
+                )
+                _display_scenario_result(sr, min_pressure)
+        elif st.button("运行漏损模拟", key="btn_leak"):
             with st.spinner("正在计算..."):
                 sr = simulate_leakage(
                     config,
@@ -224,22 +236,29 @@ def render_simulation(config, result, leak_coeff, leak_exp, min_pressure):
                     leak_coefficient=leak_coeff,
                     pressure_exponent=leak_exp,
                 )
-                _display_scenario_result(sr)
+                _display_scenario_result(sr, min_pressure)
 
         st.subheader("多漏损系数对比")
         if st.button("运行漏损系数敏感性分析", key="btn_leak_multi"):
             with st.spinner("正在计算..."):
                 scenarios = run_multi_leakage_scenarios(config)
-                fig = plot_scenario_comparison(scenarios)
+                fig = plot_scenario_comparison(scenarios, min_pressure)
                 st.pyplot(fig)
 
     with tab_valve:
         st.subheader("阀门关闭影响分析")
         open_pipes = [p.pipe_id for p in config.pipes if p.status == "open"]
+        auto_valve_preview = st.checkbox("实时预览阀门关闭效果", value=True, key="valve_auto_preview")
         closed_pipes = st.multiselect(
             "选择关闭的管段", open_pipes, key="closed_pipes"
         )
-        if st.button("运行阀门关闭模拟", key="btn_valve"):
+        if auto_valve_preview and closed_pipes:
+            with st.spinner("正在计算阀门关闭场景..."):
+                sr = simulate_valve_closure(
+                    config, baseline=result, closed_pipe_ids=closed_pipes
+                )
+                _display_scenario_result(sr, min_pressure)
+        elif st.button("运行阀门关闭模拟", key="btn_valve"):
             if not closed_pipes:
                 st.warning("请至少选择一个管段关闭")
             else:
@@ -247,16 +266,23 @@ def render_simulation(config, result, leak_coeff, leak_exp, min_pressure):
                     sr = simulate_valve_closure(
                         config, baseline=result, closed_pipe_ids=closed_pipes
                     )
-                    _display_scenario_result(sr)
+                    _display_scenario_result(sr, min_pressure)
 
     with tab_pump:
         st.subheader("泵站故障模拟")
         pump_ids = [p.pump_id for p in config.pumps]
         if pump_ids:
+            auto_pump_preview = st.checkbox("实时预览泵站故障效果", value=True, key="pump_auto_preview")
             failed_pumps = st.multiselect(
                 "选择故障泵站", pump_ids, key="failed_pumps"
             )
-            if st.button("运行泵站故障模拟", key="btn_pump"):
+            if auto_pump_preview and failed_pumps:
+                with st.spinner("正在计算泵站故障场景..."):
+                    sr = simulate_pump_failure(
+                        config, baseline=result, failed_pump_ids=failed_pumps
+                    )
+                    _display_scenario_result(sr, min_pressure)
+            elif st.button("运行泵站故障模拟", key="btn_pump"):
                 if not failed_pumps:
                     st.warning("请至少选择一个泵站")
                 else:
@@ -264,7 +290,7 @@ def render_simulation(config, result, leak_coeff, leak_exp, min_pressure):
                         sr = simulate_pump_failure(
                             config, baseline=result, failed_pump_ids=failed_pumps
                         )
-                        _display_scenario_result(sr)
+                        _display_scenario_result(sr, min_pressure)
         else:
             st.info("当前管网无泵站配置")
 
@@ -364,7 +390,7 @@ def render_export(config, result, leakage_asmts, critical, shortage):
             st.success(f"已导出: {path}")
 
 
-def _display_scenario_result(sr):
+def _display_scenario_result(sr, min_pressure):
     st.markdown(f"**场景**: {sr.scenario_name}")
     st.markdown(f"**描述**: {sr.description}")
 
@@ -376,7 +402,7 @@ def _display_scenario_result(sr):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("**场景压力**")
-        fig = plot_pressure_distribution(sr.scenario)
+        fig = plot_pressure_distribution(sr.scenario, min_pressure=min_pressure)
         st.pyplot(fig)
     with col2:
         st.markdown("**压力变化**")
@@ -412,39 +438,17 @@ def main():
         st.info("请在左侧加载管网配置数据")
         return
 
-    config, min_pressure, leak_coeff, leak_exp, auto_recompute = sidebar_result
+    config, min_pressure, leak_coeff, leak_exp = sidebar_result
 
     if config is None:
         st.info("请在左侧加载管网配置数据")
         return
 
-    params_changed = False
-    if st.session_state.last_min_pressure is not None and st.session_state.last_min_pressure != min_pressure:
-        params_changed = True
-    if st.session_state.last_leak_coeff is not None and st.session_state.last_leak_coeff != leak_coeff:
-        params_changed = True
-    if st.session_state.last_leak_exp is not None and st.session_state.last_leak_exp != leak_exp:
-        params_changed = True
-
-    st.session_state.last_min_pressure = min_pressure
-    st.session_state.last_leak_coeff = leak_coeff
-    st.session_state.last_leak_exp = leak_exp
-
-    if st.button("运行水力计算", type="primary"):
+    if st.session_state.result is None or st.button("运行水力计算", type="primary"):
         with st.spinner("正在求解管网水力方程..."):
             result = solve_network(config)
             st.session_state.result = result
             st.session_state.config = config
-
-    if auto_recompute and params_changed and st.session_state.result is not None:
-        with st.spinner("参数变化，正在重新计算..."):
-            result = solve_network(config)
-            st.session_state.result = result
-            st.session_state.config = config
-
-    if st.session_state.result is None:
-        st.info("请点击「运行水力计算」开始分析")
-        return
 
     result = st.session_state.result
     if result.errors:
@@ -453,9 +457,12 @@ def main():
             st.error(f"  - {e}")
         return
 
-    render_overview(config, result)
+    if not result.converged:
+        st.warning("水力求解未完全收敛，结果仅供参考")
+
+    render_overview(config, result, min_pressure)
     st.divider()
-    render_hydraulic(result)
+    render_hydraulic(result, min_pressure)
     st.divider()
     render_simulation(config, result, leak_coeff, leak_exp, min_pressure)
     st.divider()
