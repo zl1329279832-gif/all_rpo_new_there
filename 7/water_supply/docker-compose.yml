@@ -1,0 +1,15 @@
+services:
+  water-supply:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: water-supply-analyzer:latest
+    container_name: water-supply-analyzer
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./simulation_results:/app/simulation_results
+      - ./output_charts:/app/output_charts
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai

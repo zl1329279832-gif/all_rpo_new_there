@@ -18,7 +18,11 @@ plt.rcParams["font.sans-serif"] = ["SimHei", "Microsoft YaHei", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 
 
-def plot_pressure_distribution(result: HydraulicResult, config: Optional[NetworkConfig] = None) -> plt.Figure:
+def plot_pressure_distribution(
+    result: HydraulicResult,
+    config: Optional[NetworkConfig] = None,
+    min_pressure: float = 15.0,
+) -> plt.Figure:
     fig, ax = plt.subplots(figsize=(10, 6))
     nodes = sorted(result.node_pressures.keys())
     pressures = [result.node_pressures[n] for n in nodes]
@@ -27,15 +31,21 @@ def plot_pressure_distribution(result: HydraulicResult, config: Optional[Network
     for p in pressures:
         if p < 0:
             colors.append("#d32f2f")
-        elif p < 15:
+        elif p < min_pressure:
             colors.append("#f57c00")
-        elif p < 30:
+        elif p < min_pressure + 15:
             colors.append("#fbc02d")
         else:
             colors.append("#388e3c")
 
     bars = ax.bar(nodes, pressures, color=colors, edgecolor="white", linewidth=0.5)
-    ax.axhline(y=15, color="red", linestyle="--", linewidth=1, label="最小压力 (15m)")
+    ax.axhline(
+        y=min_pressure,
+        color="red",
+        linestyle="--",
+        linewidth=1,
+        label=f"最小压力 ({min_pressure}m)",
+    )
     ax.set_xlabel("节点 ID")
     ax.set_ylabel("压力 (m)")
     ax.set_title("节点压力分布")
@@ -88,7 +98,9 @@ def plot_leakage_risk(assessments: list[LeakageRiskAssessment]) -> plt.Figure:
 
 
 def plot_network_graph(
-    config: NetworkConfig, result: Optional[HydraulicResult] = None
+    config: NetworkConfig,
+    result: Optional[HydraulicResult] = None,
+    min_pressure: float = 15.0,
 ) -> plt.Figure:
     from network import build_undirected_supply_graph
 
@@ -115,7 +127,7 @@ def plot_network_graph(
             elif p < 0:
                 node_colors.append("#d32f2f")
                 node_sizes.append(400)
-            elif p < 15:
+            elif p < min_pressure:
                 node_colors.append("#f57c00")
                 node_sizes.append(350)
             else:
@@ -154,7 +166,10 @@ def plot_network_graph(
     return fig
 
 
-def plot_scenario_comparison(scenarios: list[ScenarioResult]) -> plt.Figure:
+def plot_scenario_comparison(
+    scenarios: list[ScenarioResult],
+    min_pressure: float = 15.0,
+) -> plt.Figure:
     fig, axes = plt.subplots(1, 2, figsize=(16, 7))
 
     ax1 = axes[0]
@@ -163,7 +178,7 @@ def plot_scenario_comparison(scenarios: list[ScenarioResult]) -> plt.Figure:
         pressures = [sr.scenario.node_pressures.get(n, 0) for n in nodes]
         ax1.plot(nodes, pressures, marker="o", markersize=3, label=sr.scenario_name)
 
-    ax1.axhline(y=15, color="red", linestyle="--", linewidth=1)
+    ax1.axhline(y=min_pressure, color="red", linestyle="--", linewidth=1)
     ax1.set_xlabel("节点 ID")
     ax1.set_ylabel("压力 (m)")
     ax1.set_title("场景压力对比")
