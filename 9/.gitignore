@@ -1,0 +1,73 @@
+# ==== Java / Maven ====
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+.mvn/
+.mvnw
+.mvnw.cmd
+
+# ==== IDE ====
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.settings/
+.project
+.classpath
+.factorypath
+
+# ==== Logs ====
+logs/
+*.log
+*.log.*
+nohup.out
+catalina.out
+
+# ==== Attachments & Exports ====
+attachments/
+uploads/
+exports/
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.doc
+*.docx
+
+# ==== Local Config ====
+application-local.yml
+application-local.properties
+.env.local
+.env.*.local
+config-local.properties
+
+# ==== Node / Frontend ====
+node_modules/
+dist/
+dist-ssr/
+*.local
+.DS_Store
+.npm
+.cache/
+.parcel-cache/
+.vite/
+.eslintcache
+
+# ==== Database & Cache ====
+*.db
+*.sqlite
+redis/
+dump.rdb
+
+# ==== Temp ====
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
