@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "jsx": "preserve",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@platform/shared-types": ["packages/shared-types/src/index.ts"],
+      "@platform/shared-utils": ["packages/shared-utils/src/index.ts"],
+      "@platform/shared-components": ["packages/shared-components/src/index.ts"],
+      "@platform/web/*": ["apps/web/src/*"],
+      "@platform/bff/*": ["apps/bff/src/*"]
+    }
+  }
+}
