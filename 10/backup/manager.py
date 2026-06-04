@@ -80,14 +80,19 @@ class BackupManager:
                 shutil.rmtree(backup_path, ignore_errors=True)
             raise BackupError(f"完整备份失败: {str(e)}")
 
-    def restore_database_backup(self, backup_file: str) -> bool:
+    def restore_database_backup(self, backup_file: str, db=None) -> bool:
         backup_path = Path(backup_file)
         if not backup_path.exists():
             raise BackupError("备份文件不存在")
 
         try:
+            if db is not None:
+                db.close()
+
             if self.database_path.exists():
-                self.database_path.rename(f"{self.database_path}.bak_{datetime.now().strftime('%Y%m%d%H%M%S')}")
+                bak_suffix = datetime.now().strftime('%Y%m%d%H%M%S')
+                bak_path = f"{self.database_path}.bak_{bak_suffix}"
+                self.database_path.rename(bak_path)
 
             src_conn = sqlite3.connect(str(backup_path))
             dst_conn = sqlite3.connect(str(self.database_path))
@@ -95,8 +100,16 @@ class BackupManager:
             src_conn.close()
             dst_conn.close()
 
+            if db is not None:
+                db.reconnect()
+
             return True
         except sqlite3.Error as e:
+            if db is not None:
+                try:
+                    db.reconnect()
+                except Exception:
+                    pass
             raise BackupError(f"数据库恢复失败: {str(e)}")
 
     def get_backup_list(self) -> List[Dict[str, Any]]:

@@ -123,6 +123,7 @@ class MainWindow(QMainWindow):
         right_tab.addTab(self.statistics_tab, "统计概览")
 
         self.backup_tab = BackupPanel(self.backup_manager, self.db)
+        self.backup_tab.data_restored.connect(self.refresh_collections)
         right_tab.addTab(self.backup_tab, "备份管理")
 
         splitter.addWidget(left_widget)

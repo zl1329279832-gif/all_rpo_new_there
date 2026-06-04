@@ -53,6 +53,11 @@ class DatabaseConnection:
             self._conn.close()
             self._conn = None
 
+    def reconnect(self):
+        self.close()
+        self._connect()
+        self.initialize_database()
+
     def initialize_database(self) -> bool:
         try:
             with self.get_cursor() as cursor:

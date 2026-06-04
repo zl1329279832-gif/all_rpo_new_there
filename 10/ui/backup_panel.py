@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget,
     QTableWidgetItem, QHeaderView, QGroupBox, QLabel, QMessageBox,
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Signal, Qt
 
 from backup import BackupManager, BackupError
 from database import DatabaseConnection
@@ -10,6 +10,8 @@ from .dialogs import confirm_action, show_error, show_info
 
 
 class BackupPanel(QWidget):
+    data_restored = Signal()
+
     def __init__(self, backup_manager: BackupManager, db: DatabaseConnection):
         super().__init__()
         self.backup_manager = backup_manager
@@ -128,8 +130,9 @@ class BackupPanel(QWidget):
 
         try:
             if backup_type == "数据库":
-                if self.backup_manager.restore_database_backup(backup_path):
-                    show_info(self, "恢复成功", "数据库已恢复，请重启应用")
+                if self.backup_manager.restore_database_backup(backup_path, db=self.db):
+                    self.data_restored.emit()
+                    show_info(self, "恢复成功", "数据库已恢复，界面数据已刷新")
             else:
                 show_info(self, "提示", "完整备份需要手动解压恢复")
         except BackupError as e:

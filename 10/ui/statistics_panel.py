@@ -124,11 +124,14 @@ class StatisticsPanel(QWidget):
                 break
 
     def update_stat_list(self, labels: list, data: dict, group: QGroupBox):
-        for label in labels:
-            label.setParent(None)
+        layout = group.layout()
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
         labels.clear()
 
-        layout = group.layout()
         for key, value in data.items():
             label = QLabel(f"{key}: {value} 件")
             label.setStyleSheet("padding: 5px; font-size: 13px;")
