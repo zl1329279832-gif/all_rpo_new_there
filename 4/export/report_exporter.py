@@ -3,7 +3,6 @@ import os
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 import io
-import json
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
@@ -579,14 +578,20 @@ class ReportExporter:
         for metric, data in mom_changes.items():
             if data and len(data) >= 2:
                 latest = data[-1]
-                prev = data[-2]
                 mom_rate = latest.get('环比变化率')
                 if mom_rate is not None:
                     rate_class = 'mom-positive' if mom_rate >= 0 else 'mom-negative'
                     rate_sign = '+' if mom_rate >= 0 else ''
+                    display_value = latest.get('数量')
+                    if display_value is None:
+                        display_value = latest.get('金额')
+                    if display_value is None:
+                        display_value = latest.get('平均候诊时间')
+                    if display_value is None:
+                        display_value = latest.get('平均满意度', '')
                     html += f'''
                     <div class="kpi-card">
-                        <div class="kpi-value">{latest.get("数量", latest.get("金额", latest.get("平均候诊时间", latest.get("平均满意度", "")))}</div>
+                        <div class="kpi-value">{display_value}</div>
                         <div class="kpi-label">{metric} <span class="{rate_class}">({rate_sign}{mom_rate}%)</span></div>
                     </div>
                     '''
