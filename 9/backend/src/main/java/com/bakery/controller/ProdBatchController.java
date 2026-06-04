@@ -1,0 +1,66 @@
+package com.bakery.controller;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.bakery.common.Result;
+import com.bakery.dto.AnalysisVO;
+import com.bakery.entity.ProdBatch;
+import com.bakery.service.ProdBatchService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+
+@Api(tags = "成品批次管理")
+@RestController
+@RequestMapping("/prod-batch")
+public class ProdBatchController {
+
+    @Autowired
+    private ProdBatchService prodBatchService;
+
+    @ApiOperation("获取批次列表")
+    @GetMapping("/page")
+    public Result<IPage<ProdBatch>> getBatchPage(@RequestParam(defaultValue = "1") Integer pageNum,
+                                               @RequestParam(defaultValue = "10") Integer pageSize,
+                                               @RequestParam(required = false) Long recipeId,
+                                               @RequestParam(required = false) Long storeId,
+                                               @RequestParam(required = false) String batchNo,
+                                               @RequestParam(required = false) Integer warningType) {
+        return Result.success(prodBatchService.getBatchPage(pageNum, pageSize, recipeId, storeId, batchNo, warningType));
+    }
+
+    @ApiOperation("获取批次详情")
+    @GetMapping("/{id}")
+    public Result<Map<String, Object>> getBatchDetail(@PathVariable Long id) {
+        return Result.success(prodBatchService.getBatchDetail(id));
+    }
+
+    @ApiOperation("获取可用批次列表（效期优先）")
+    @GetMapping("/available")
+    public Result<List<ProdBatch>> getAvailableBatches(@RequestParam Long recipeId,
+                                                      @RequestParam(defaultValue = "1") Long storeId) {
+        return Result.success(prodBatchService.getAvailableBatches(recipeId, storeId));
+    }
+
+    @ApiOperation("获取批次剩余数量")
+    @GetMapping("/remain/{batchId}")
+    public Result<BigDecimal> getRemainQty(@PathVariable Long batchId) {
+        return Result.success(prodBatchService.getRemainQty(batchId));
+    }
+
+    @ApiOperation("获取临期预警统计")
+    @GetMapping("/warning/stats")
+    public Result<AnalysisVO.WarningStatsVO> getWarningStats(@RequestParam(defaultValue = "1") Long storeId) {
+        return Result.success(prodBatchService.getWarningStats(storeId));
+    }
+
+    @ApiOperation("获取临期预警列表")
+    @GetMapping("/warning/list")
+    public Result<List<ProdBatch>> getWarningList(@RequestParam(defaultValue = "1") Long storeId) {
+        return Result.success(prodBatchService.getWarningList(storeId));
+    }
+}

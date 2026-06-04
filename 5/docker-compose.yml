@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  lab-sample-system:
+    build: .
+    image: lab-sample-system:latest
+    container_name: lab-sample-system
+    restart: unless-stopped
+    environment:
+      - DISPLAY=:0
+      - VNC_PASSWORD=lab123456
+      - RESOLUTION=1280x800x24
+    volumes:
+      - ./data:/app/data
+      - ./attachments:/app/attachments
+      - ./reports:/app/reports
+      - ./backups:/app/backups
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "main.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  novnc:
+    image: dougw/novnc
+    container_name: lab-sample-novnc
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - VNC_SERVER=lab-sample-system:5900
+    depends_on:
+      - lab-sample-system
