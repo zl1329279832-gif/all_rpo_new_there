@@ -19,8 +19,13 @@ export class WarehouseScene {
   private labelSystem: LabelSystem
   private locations: Map<string, LocationData> = new Map()
   private locationMarkers: Map<string, THREE.Mesh> = new Map()
+  private locationMarkerMap: Map<string, { mesh: THREE.InstancedMesh; index: number }> = new Map()
+  private emptyInstances: THREE.InstancedMesh | null = null
+  private occupiedInstances: THREE.InstancedMesh | null = null
+  private locationMarkerGeo: THREE.BoxGeometry | null = null
   private animationFrameId: number = 0
   private isRunning: boolean = false
+  private isPaused: boolean = false
   private rackGroups: THREE.Group[] = []
   private stackers: THREE.Group[] = []
   private conveyors: THREE.Group[] = []
@@ -31,6 +36,11 @@ export class WarehouseScene {
   private isDragging: boolean = false
   private lastHoverTime: number = 0
   private hoverThrottle: number = 50
+  private loadedZones: Set<ZoneType> = new Set()
+  private pathLines: THREE.Line[] = []
+  private pathGroup: THREE.Group = new THREE.Group()
+  private zoneGroups: Map<ZoneType, THREE.Group[]> = new Map()
+  private locationGrid: Map<string, { x: number; z: number; level: number }> = new Map()
 
   constructor(container: HTMLElement) {
     this.container = container
@@ -48,7 +58,7 @@ export class WarehouseScene {
 
   private init(): void {
     this.scene.background = new THREE.Color(0x1a1a2e)
-    this.scene.fog = new THREE.Fog(0x1a1a2e, 40, 80)
+    this.scene.fog = new THREE.FogExp2(0x1a1a2e, 0.012)
 
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
@@ -63,7 +73,7 @@ export class WarehouseScene {
     this.camera.lookAt(0, 0, 0)
 
     this.controls.enableDamping = true
-    this.controls.dampingFactor = 0.05
+    this.controls.dampingFactor = 0.08
     this.controls.minDistance = 5
     this.controls.maxDistance = 60
     this.controls.maxPolarAngle = Math.PI / 2.2
@@ -91,8 +101,47 @@ export class WarehouseScene {
     mainLight.shadow.bias = -0.001
     this.scene.add(mainLight)
 
-    const lights = this.modelFactory.createLights()
-    this.scene.add(lights)
+    const lightsGroup = new THREE.Group()
+    lightsGroup.name = 'lights'
+
+    const fixtureGeometry = new THREE.BoxGeometry(1.5, 0.1, 0.3)
+    const fixtureMaterial = new THREE.MeshStandardMaterial({
+      color: 0x333333,
+      metalness: 0.5,
+      roughness: 0.5,
+    })
+    const diffuserGeometry = new THREE.BoxGeometry(1.4, 0.05, 0.25)
+    const diffuserMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffffee,
+      emissiveIntensity: 0.5,
+    })
+
+    const lightPositions = [
+      [-8, 6, -8],
+      [-8, 6, 8],
+      [8, 6, -8],
+      [8, 6, 8],
+    ]
+
+    lightPositions.forEach(([x, y, z]) => {
+      const fixture = new THREE.Mesh(fixtureGeometry, fixtureMaterial)
+      fixture.position.set(x, y, z)
+      fixture.castShadow = false
+      lightsGroup.add(fixture)
+
+      const diffuser = new THREE.Mesh(diffuserGeometry, diffuserMaterial)
+      diffuser.position.set(x, y - 0.05, z)
+      diffuser.castShadow = false
+      lightsGroup.add(diffuser)
+
+      const pointLight = new THREE.PointLight(0xffffee, 0.8, 20, 2)
+      pointLight.position.set(x, y - 0.5, z)
+      pointLight.castShadow = false
+      lightsGroup.add(pointLight)
+    })
+
+    this.scene.add(lightsGroup)
   }
 
   private setupEventListeners(): void {
@@ -113,13 +162,19 @@ export class WarehouseScene {
 
     this.renderer.domElement.addEventListener('click', (event) => {
       const intersects = this.pickerSystem.handleClick(event, this.renderer.domElement)
+      let handled = false
       if (intersects.length > 0) {
         const object = intersects[0].object
-        if (object.userData.type === 'location') {
-          this.onLocationClick?.(object.userData.locationId)
-          this.highlightLocation(object.userData.locationId)
-        } else if (object.userData.type === 'device') {
+        if (object.userData.type === 'device') {
           this.onDeviceClick?.(object.userData.deviceId)
+          handled = true
+        }
+      }
+      if (!handled) {
+        const locationId = this.findLocationByClick(event)
+        if (locationId) {
+          this.onLocationClick?.(locationId)
+          this.highlightLocation(locationId)
         }
       }
       this.needsRender = true
@@ -145,6 +200,36 @@ export class WarehouseScene {
     this.labelSystem.updateSize()
   }
 
+  private findLocationByClick(event: MouseEvent): string | null {
+    const rect = this.renderer.domElement.getBoundingClientRect()
+    const mouse = new THREE.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    )
+    const raycaster = new THREE.Raycaster()
+    raycaster.setFromCamera(mouse, this.camera)
+
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+    const intersection = new THREE.Vector3()
+    raycaster.ray.intersectPlane(groundPlane, intersection)
+    if (!intersection) return null
+
+    let closestId: string | null = null
+    let closestDist = 0.6
+
+    this.locationGrid.forEach((grid, id) => {
+      const dx = intersection.x - grid.x
+      const dz = intersection.z - grid.z
+      const dist = Math.sqrt(dx * dx + dz * dz)
+      if (dist < closestDist) {
+        closestDist = dist
+        closestId = id
+      }
+    })
+
+    return closestId
+  }
+
   buildWarehouse(locationsData: LocationData[]): void {
     locationsData.forEach((loc) => {
       this.locations.set(loc.id, loc)
@@ -156,7 +241,10 @@ export class WarehouseScene {
     const markingLines = this.modelFactory.createMarkingLines(50, 40)
     this.scene.add(markingLines)
 
-    this.buildRacks(locationsData)
+    this.scene.add(this.pathGroup)
+
+    this.loadZone('storage')
+
     this.buildStackers()
     this.buildConveyors()
     this.buildFences()
@@ -168,10 +256,10 @@ export class WarehouseScene {
 
   private buildRacks(_locationsData: LocationData[]): void {
     const rackConfigs = [
-      { x: -12, z: -8, rows: 2, bays: 8, levels: 6, rotation: 0 },
-      { x: -12, z: 8, rows: 2, bays: 8, levels: 6, rotation: 0 },
-      { x: 12, z: -8, rows: 2, bays: 8, levels: 6, rotation: Math.PI },
-      { x: 12, z: 8, rows: 2, bays: 8, levels: 6, rotation: Math.PI },
+      { x: -12, z: -8, rows: 2, bays: 8, levels: 6, rotation: 0, zone: 'storage' as ZoneType },
+      { x: -12, z: 8, rows: 2, bays: 8, levels: 6, rotation: 0, zone: 'storage' as ZoneType },
+      { x: 12, z: -8, rows: 2, bays: 8, levels: 6, rotation: Math.PI, zone: 'storage' as ZoneType },
+      { x: 12, z: 8, rows: 2, bays: 8, levels: 6, rotation: Math.PI, zone: 'storage' as ZoneType },
     ]
 
     rackConfigs.forEach((config, index) => {
@@ -186,9 +274,44 @@ export class WarehouseScene {
       }
 
       rackGroup.position.set(config.x, 0, config.z)
+      rackGroup.userData = { zone: config.zone }
       this.rackGroups.push(rackGroup)
-      this.scene.add(rackGroup)
+
+      if (!this.zoneGroups.has(config.zone)) {
+        this.zoneGroups.set(config.zone, [])
+      }
+      this.zoneGroups.get(config.zone)!.push(rackGroup)
     })
+  }
+
+  loadZone(zone: ZoneType): void {
+    if (this.loadedZones.has(zone)) return
+    this.loadedZones.add(zone)
+
+    if (zone === 'storage') {
+      this.buildRacks([])
+    }
+
+    const groups = this.zoneGroups.get(zone) || []
+    groups.forEach((group) => {
+      if (!group.parent) {
+        this.scene.add(group)
+      }
+    })
+    this.needsRender = true
+  }
+
+  unloadZone(zone: ZoneType): void {
+    if (!this.loadedZones.has(zone)) return
+    this.loadedZones.delete(zone)
+
+    const groups = this.zoneGroups.get(zone) || []
+    groups.forEach((group) => {
+      if (group.parent) {
+        this.scene.remove(group)
+      }
+    })
+    this.needsRender = true
   }
 
   private buildStackers(): void {
@@ -289,22 +412,54 @@ export class WarehouseScene {
   }
 
   private buildLocationMarkers(locationsData: LocationData[]): void {
-    locationsData.forEach((location) => {
-      const marker = this.modelFactory.createLocationMarker(
-        location.id,
-        0.9,
-        0.75,
-        location.occupied
+    const storageLocations = locationsData.filter(
+      (loc) => loc.id.startsWith('R') && loc.zone === 'storage'
+    )
+    if (storageLocations.length === 0) return
+
+    const emptyLocs = storageLocations.filter((loc) => !loc.occupied)
+    const occupiedLocs = storageLocations.filter((loc) => loc.occupied)
+
+    this.locationMarkerGeo = new THREE.BoxGeometry(0.9, 0.02, 0.9)
+    const materials = this.modelFactory['materials']
+
+    if (emptyLocs.length > 0) {
+      this.emptyInstances = new THREE.InstancedMesh(
+        this.locationMarkerGeo,
+        materials.locationEmptyMaterial,
+        emptyLocs.length
       )
-      marker.position.set(
-        location.position.x,
-        location.position.y - 0.37,
-        location.position.z
+      this.emptyInstances.name = 'emptyLocationMarkers'
+      const matrix = new THREE.Matrix4()
+      emptyLocs.forEach((loc, i) => {
+        const deckY = (loc.level - 1) * 0.8 + 0.44 + 0.02
+        matrix.setPosition(loc.position.x, deckY, loc.position.z)
+        this.emptyInstances!.setMatrixAt(i, matrix)
+        this.locationMarkerMap.set(loc.id, { mesh: this.emptyInstances!, index: i })
+        this.locationGrid.set(loc.id, { x: loc.position.x, z: loc.position.z, level: loc.level })
+      })
+      this.emptyInstances.instanceMatrix.needsUpdate = true
+      this.scene.add(this.emptyInstances)
+    }
+
+    if (occupiedLocs.length > 0) {
+      this.occupiedInstances = new THREE.InstancedMesh(
+        this.locationMarkerGeo,
+        materials.locationOccupiedMaterial,
+        occupiedLocs.length
       )
-      this.locationMarkers.set(location.id, marker)
-      this.pickerSystem.addInteractiveObject(marker)
-      this.scene.add(marker)
-    })
+      this.occupiedInstances.name = 'occupiedLocationMarkers'
+      const matrix = new THREE.Matrix4()
+      occupiedLocs.forEach((loc, i) => {
+        const deckY = (loc.level - 1) * 0.8 + 0.44 + 0.02
+        matrix.setPosition(loc.position.x, deckY, loc.position.z)
+        this.occupiedInstances!.setMatrixAt(i, matrix)
+        this.locationMarkerMap.set(loc.id, { mesh: this.occupiedInstances!, index: i })
+        this.locationGrid.set(loc.id, { x: loc.position.x, z: loc.position.z, level: loc.level })
+      })
+      this.occupiedInstances.instanceMatrix.needsUpdate = true
+      this.scene.add(this.occupiedInstances)
+    }
   }
 
 
@@ -334,12 +489,13 @@ export class WarehouseScene {
       const boxColors = [0xD4A574, 0x4A90D9, 0xE25C5C, 0x6BCB77]
       const colorIndex = Math.floor(Math.random() * boxColors.length)
       const box = this.modelFactory.createBox('medium', true, boxColors[colorIndex])
-      box.position.y = 0.13
+      box.position.y = 0.11
       cargoGroup.add(box)
 
+      const deckY = (location.level - 1) * 0.8 + 0.44 + 0.02
       cargoGroup.position.set(
         location.position.x,
-        location.position.y - 0.38,
+        deckY,
         location.position.z
       )
 
@@ -386,25 +542,27 @@ export class WarehouseScene {
   }
 
   highlightLocation(locationId: string): void {
-    this.locationMarkers.forEach((marker, id) => {
-      if (id === locationId) {
-        marker.material = this.modelFactory['materials'].locationSelectedMaterial
-      } else {
-        const location = this.locations.get(id)
-        marker.material = location?.occupied
-          ? this.modelFactory['materials'].locationOccupiedMaterial
-          : this.modelFactory['materials'].locationEmptyMaterial
-      }
+    this.locationMarkerMap.forEach((entry, id) => {
+      const color = id === locationId
+        ? new THREE.Color(0x165DFF)
+        : this.locations.get(id)?.occupied
+          ? new THREE.Color(0xFF7D00)
+          : new THREE.Color(0x00B42A)
+      entry.mesh.setColorAt(entry.index, color)
     })
+    if (this.emptyInstances) this.emptyInstances.instanceColor!.needsUpdate = true
+    if (this.occupiedInstances) this.occupiedInstances.instanceColor!.needsUpdate = true
   }
 
   clearHighlight(): void {
-    this.locationMarkers.forEach((marker, id) => {
-      const location = this.locations.get(id)
-      marker.material = location?.occupied
-        ? this.modelFactory['materials'].locationOccupiedMaterial
-        : this.modelFactory['materials'].locationEmptyMaterial
+    this.locationMarkerMap.forEach((entry, id) => {
+      const color = this.locations.get(id)?.occupied
+        ? new THREE.Color(0xFF7D00)
+        : new THREE.Color(0x00B42A)
+      entry.mesh.setColorAt(entry.index, color)
     })
+    if (this.emptyInstances) this.emptyInstances.instanceColor!.needsUpdate = true
+    if (this.occupiedInstances) this.occupiedInstances.instanceColor!.needsUpdate = true
   }
 
   moveToZone(zone: ZoneType): void {
@@ -475,6 +633,88 @@ export class WarehouseScene {
     this.onDeviceClick = callback
   }
 
+  setLabelsVisible(visible: boolean): void {
+    this.labelSystem.setLocationLabelVisibility(visible)
+    this.labelSystem.setDeviceLabelVisibility(visible)
+  }
+
+  pauseAnimation(): void {
+    this.isPaused = true
+  }
+
+  resumeAnimation(): void {
+    this.isPaused = false
+    this.needsRender = true
+  }
+
+  showPath(locationIds: string[]): void {
+    this.clearPath()
+    if (locationIds.length < 2) return
+
+    const materials = this.modelFactory['materials']
+    const points: THREE.Vector3[] = []
+    locationIds.forEach((id) => {
+      const grid = this.locationGrid.get(id)
+      if (grid) {
+        const deckY = (grid.level - 1) * 0.8 + 0.44 + 0.1
+        points.push(new THREE.Vector3(grid.x, deckY, grid.z))
+      }
+    })
+
+    if (points.length < 2) return
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points)
+    const line = new THREE.Line(geometry, materials.pathLineMaterial)
+    this.pathLines.push(line)
+    this.pathGroup.add(line)
+    this.needsRender = true
+  }
+
+  clearPath(): void {
+    this.pathLines.forEach((line) => {
+      line.geometry.dispose()
+      this.pathGroup.remove(line)
+    })
+    this.pathLines = []
+    this.needsRender = true
+  }
+
+  updateDeviceStatus(deviceId: string, status: string): void {
+    const materials = this.modelFactory['materials']
+    const statusMaterialMap: Record<string, THREE.MeshStandardMaterial> = {
+      running: materials.ledGreen,
+      idle: materials.ledYellow,
+      error: materials.ledRed,
+      maintenance: materials.ledBlue,
+    }
+    const targetMaterial = statusMaterialMap[status]
+    if (!targetMaterial) return
+
+    const stacker = this.stackerMap.get(deviceId)
+    if (stacker) {
+      const statusLight = stacker.getObjectByName('statusLight') as THREE.Mesh | undefined
+      if (statusLight) {
+        statusLight.material = targetMaterial
+      }
+    }
+
+    this.scene.traverse((child) => {
+      if (
+        child instanceof THREE.Mesh &&
+        child.userData.type === 'device' &&
+        child.userData.deviceId === deviceId
+      ) {
+        const group = child.parent
+        if (group) {
+          const light = group.getObjectByName('statusLight') as THREE.Mesh | undefined
+          if (light) {
+            light.material = targetMaterial
+          }
+        }
+      }
+    })
+  }
+
   start(): void {
     if (this.isRunning) return
     this.isRunning = true
@@ -485,6 +725,8 @@ export class WarehouseScene {
     if (!this.isRunning) return
 
     this.animationFrameId = requestAnimationFrame(this.animate.bind(this))
+
+    if (this.isPaused) return
 
     const hasActiveTweens = TWEEN.getAll().length > 0
     const hasAnimation = this.animationController.isAnimationPlaying()
@@ -538,9 +780,80 @@ export class WarehouseScene {
 
   dispose(): void {
     this.stop()
+
     window.removeEventListener('resize', this.onResize.bind(this))
+
+    this.clearPath()
+    this.scene.remove(this.pathGroup)
+
+    this.locationMarkerMap.clear()
+    this.locationGrid.clear()
+    this.locationMarkers.clear()
+
+    if (this.emptyInstances) {
+      this.scene.remove(this.emptyInstances)
+      this.emptyInstances.dispose()
+      this.emptyInstances = null
+    }
+    if (this.occupiedInstances) {
+      this.scene.remove(this.occupiedInstances)
+      this.occupiedInstances.dispose()
+      this.occupiedInstances = null
+    }
+    if (this.locationMarkerGeo) {
+      this.locationMarkerGeo.dispose()
+      this.locationMarkerGeo = null
+    }
+
+    this.scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry?.dispose()
+        if (Array.isArray(child.material)) {
+          child.material.forEach((m) => m.dispose())
+        } else if (child.material) {
+          child.material.dispose()
+        }
+      }
+    })
+
+    this.cargoGroups.forEach((group) => {
+      this.scene.remove(group)
+    })
+    this.cargoGroups.clear()
+
+    this.rackGroups.forEach((group) => {
+      this.scene.remove(group)
+    })
+    this.rackGroups = []
+
+    this.stackers.forEach((group) => {
+      this.scene.remove(group)
+    })
+    this.stackers = []
+
+    this.conveyors.forEach((group) => {
+      this.scene.remove(group)
+    })
+    this.conveyors = []
+
+    this.stackerPositions = []
+    this.stackerMap.clear()
+    this.stackerCarriageMap.clear()
+    this.stackerForkMap.clear()
+    this.stackerCurrentPosition.clear()
+    this.stackerCurrentTask.clear()
+    this.stackerState.clear()
+    this.stackerTaskQueue.clear()
+
+    this.loadedZones.clear()
+    this.zoneGroups.clear()
+    this.locations.clear()
+
+    this.pickerSystem.dispose()
+    this.labelSystem.dispose()
+    this.modelFactory['materials'].dispose()
+
     this.container.removeChild(this.renderer.domElement)
     this.renderer.dispose()
-    this.labelSystem.dispose()
   }
 }

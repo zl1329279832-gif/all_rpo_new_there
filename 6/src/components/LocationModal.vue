@@ -7,6 +7,24 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const locationStatusColors: Record<string, string> = {
+  empty: '#00B42A',
+  occupied: '#FF7D00',
+  inbound: '#722ED1',
+  outbound: '#0FC6C2',
+  fault: '#F53F3F',
+  maintenance: '#FF7D00',
+}
+
+const locationStatusTexts: Record<string, string> = {
+  empty: '空闲',
+  occupied: '已占用',
+  inbound: '入库中',
+  outbound: '出库中',
+  fault: '故障',
+  maintenance: '维护中',
+}
+
 const statusColors: Record<string, string> = {
   normal: '#00B42A',
   reserved: '#165DFF',
@@ -71,8 +89,11 @@ function handleOverlayClick(event: MouseEvent) {
             </div>
             <div class="info-row">
               <span class="info-label">状态</span>
-              <span class="info-value" :class="{ occupied: inventoryStore.selectedLocation.occupied }">
-                {{ inventoryStore.selectedLocation.occupied ? '已占用' : '空闲' }}
+              <span
+                class="status-tag"
+                :style="{ background: locationStatusColors[inventoryStore.selectedLocation.status || (inventoryStore.selectedLocation.occupied ? 'occupied' : 'empty')], color: '#fff' }"
+              >
+                {{ locationStatusTexts[inventoryStore.selectedLocation.status || (inventoryStore.selectedLocation.occupied ? 'occupied' : 'empty')] }}
               </span>
             </div>
           </div>
@@ -268,6 +289,14 @@ function handleOverlayClick(event: MouseEvent) {
     &.occupied {
       color: #FF7D00;
     }
+  }
+
+  .status-tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
   }
 }
 

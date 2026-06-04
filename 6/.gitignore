@@ -21,6 +21,7 @@ model-cache
 models/*.bin
 models/*.gltf.cache
 *.glb.cache
+three-cache
 
 # Debug screenshots
 screenshots
@@ -59,3 +60,13 @@ Desktop.ini
 *.tmp
 *.temp
 *.bak
+
+# Test data
+test-data
+*.test.json
+mock-data/
+
+# Performance profiles
+profiles
+*.cpuprofile
+*.heapsnapshot

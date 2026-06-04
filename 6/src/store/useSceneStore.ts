@@ -10,6 +10,10 @@ export const useSceneStore = defineStore('scene', () => {
   const isFullscreen = ref(false)
   const showTutorial = ref(false)
   const showModelInfo = ref(false)
+  const showLabels = ref(true)
+  const showPaths = ref(false)
+  const animationPaused = ref(false)
+  const currentPath = ref<string[]>([])
 
   const zoneNames: Record<ZoneType, string> = {
     inbound: '入库区',
@@ -54,6 +58,18 @@ export const useSceneStore = defineStore('scene', () => {
     showModelInfo.value = !showModelInfo.value
   }
 
+  function toggleLabels() {
+    showLabels.value = !showLabels.value
+  }
+
+  function togglePaths() {
+    showPaths.value = !showPaths.value
+  }
+
+  function toggleAnimation() {
+    animationPaused.value = !animationPaused.value
+  }
+
   return {
     currentZone,
     showLocationLabels,
@@ -62,11 +78,18 @@ export const useSceneStore = defineStore('scene', () => {
     isFullscreen,
     showTutorial,
     showModelInfo,
+    showLabels,
+    showPaths,
+    animationPaused,
+    currentPath,
     zoneNames,
     setCurrentZone,
     toggleLabel,
     toggleFullscreen,
     toggleTutorial,
     toggleModelInfo,
+    toggleLabels,
+    togglePaths,
+    toggleAnimation,
   }
 })

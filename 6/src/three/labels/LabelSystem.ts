@@ -28,6 +28,8 @@ export class LabelSystem {
     label.textContent = text
     label.style.cssText = `
       position: absolute;
+      top: 0;
+      left: 0;
       padding: 4px 8px;
       background: rgba(22, 93, 255, 0.9);
       color: white;
@@ -36,9 +38,9 @@ export class LabelSystem {
       border-radius: 4px;
       white-space: nowrap;
       pointer-events: auto;
-      transform: translate(-50%, -50%);
       z-index: 10;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      will-change: transform;
     `
     label.dataset.id = id
     label.dataset.type = 'location'
@@ -66,6 +68,8 @@ export class LabelSystem {
     `
     label.style.cssText = `
       position: absolute;
+      top: 0;
+      left: 0;
       padding: 6px 10px;
       background: rgba(0, 0, 0, 0.8);
       color: white;
@@ -75,8 +79,8 @@ export class LabelSystem {
       border-left: 3px solid ${statusColors[status] || '#86909C'};
       white-space: nowrap;
       pointer-events: auto;
-      transform: translate(-50%, -50%);
       z-index: 10;
+      will-change: transform;
     `
     label.dataset.id = id
     label.dataset.type = 'device'
@@ -104,7 +108,16 @@ export class LabelSystem {
     label.style.borderLeftColor = statusColors[status] || '#86909C'
   }
 
+  private _updateCounter: number = 0
+  private readonly UPDATE_INTERVAL: number = 3
+
   update(): void {
+    this._updateCounter++
+    if (this._updateCounter % this.UPDATE_INTERVAL !== 0) return
+
+    const halfWidth = this.renderer.domElement.clientWidth * 0.5
+    const halfHeight = this.renderer.domElement.clientHeight * 0.5
+
     this.labels.forEach((label, key) => {
       const position = this.labelPositions.get(key)
       if (!position) return
@@ -112,15 +125,13 @@ export class LabelSystem {
       const vector = position.clone()
       vector.project(this.camera)
 
-      const x = (vector.x * 0.5 + 0.5) * this.renderer.domElement.clientWidth
-      const y = (-vector.y * 0.5 + 0.5) * this.renderer.domElement.clientHeight
-
       if (vector.z > 1) {
-        label.style.display = 'none'
+        if (label.style.display !== 'none') label.style.display = 'none'
       } else {
-        label.style.display = 'block'
-        label.style.left = `${x}px`
-        label.style.top = `${y}px`
+        const x = vector.x * halfWidth + halfWidth
+        const y = -vector.y * halfHeight + halfHeight
+        label.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`
+        if (label.style.display !== 'block') label.style.display = 'block'
       }
     })
   }

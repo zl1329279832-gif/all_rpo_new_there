@@ -26,13 +26,17 @@ const statusTexts: Record<string, string> = {
   maintenance: '维护中',
 }
 
-type CargoStatusKey = 'total' | 'normal' | 'reserved' | 'damaged'
+type CargoStatusKey = 'total' | 'normal' | 'reserved' | 'damaged' | 'inbound' | 'outbound' | 'fault' | 'maintenance'
 
 const cargoStatusColors: Record<CargoStatusKey, string> = {
   total: '#86909C',
   normal: '#00B42A',
   reserved: '#165DFF',
   damaged: '#F53F3F',
+  inbound: '#722ED1',
+  outbound: '#0FC6C2',
+  fault: '#F53F3F',
+  maintenance: '#FF7D00',
 }
 
 const cargoStatusTexts: Record<CargoStatusKey, string> = {
@@ -40,9 +44,13 @@ const cargoStatusTexts: Record<CargoStatusKey, string> = {
   normal: '正常',
   reserved: '预留',
   damaged: '损坏',
+  inbound: '入库中',
+  outbound: '出库中',
+  fault: '故障',
+  maintenance: '维护中',
 }
 
-const cargoStatusKeys: CargoStatusKey[] = ['total', 'normal', 'reserved', 'damaged']
+const cargoStatusKeys: CargoStatusKey[] = ['total', 'normal', 'reserved', 'damaged', 'inbound', 'outbound', 'fault', 'maintenance']
 
 const currentTime = ref(new Date().toLocaleString('zh-CN'))
 
@@ -57,7 +65,7 @@ onMounted(() => {
   }, 1000)
 })
 
-watch(() => [inventoryStore.statistics, inventoryStore.cargoStats], () => {
+watch(() => [inventoryStore.statistics, inventoryStore.cargoStats, inventoryStore.locations], () => {
   updateChart()
 }, { deep: true })
 
@@ -107,12 +115,16 @@ function updateChart() {
         data: [
           { value: inventoryStore.statistics.occupiedLocations, name: '已占用', itemStyle: { color: '#FF7D00' } },
           { value: inventoryStore.statistics.totalLocations - inventoryStore.statistics.occupiedLocations, name: '空闲', itemStyle: { color: '#00B42A' } },
+          { value: inventoryStore.inboundCount, name: '入库中', itemStyle: { color: '#722ED1' } },
+          { value: inventoryStore.outboundCount, name: '出库中', itemStyle: { color: '#0FC6C2' } },
+          { value: inventoryStore.faultCount, name: '故障', itemStyle: { color: '#F53F3F' } },
+          { value: inventoryStore.maintenanceCount, name: '维护中', itemStyle: { color: '#FF7D00' } },
         ],
       },
     ],
   }
 
-  chartInstance.setOption(option)
+  chartInstance.setOption(option, true)
 }
 
 const utilizationBarData = computed(() => {
@@ -198,6 +210,28 @@ const utilizationBarData = computed(() => {
 
     <div class="devices-section">
       <h3 class="section-title">设备状态</h3>
+      <div class="device-stats-row">
+        <div class="device-stat-item">
+          <span class="device-stat-dot" style="background: #00B42A;"></span>
+          <span class="device-stat-label">运行</span>
+          <span class="device-stat-count">{{ deviceStore.deviceStats.running }}</span>
+        </div>
+        <div class="device-stat-item">
+          <span class="device-stat-dot" style="background: #86909C;"></span>
+          <span class="device-stat-label">空闲</span>
+          <span class="device-stat-count">{{ deviceStore.deviceStats.idle }}</span>
+        </div>
+        <div class="device-stat-item">
+          <span class="device-stat-dot" style="background: #F53F3F;"></span>
+          <span class="device-stat-label">故障</span>
+          <span class="device-stat-count">{{ deviceStore.deviceStats.error }}</span>
+        </div>
+        <div class="device-stat-item">
+          <span class="device-stat-dot" style="background: #FF7D00;"></span>
+          <span class="device-stat-label">维护</span>
+          <span class="device-stat-count">{{ deviceStore.deviceStats.maintenance }}</span>
+        </div>
+      </div>
       <div class="device-list">
         <div v-for="device in deviceStore.devices.slice(0, 6)" :key="device.id" class="device-item">
           <div class="device-status" :style="{ background: statusColors[device.status] }"></div>
@@ -392,6 +426,35 @@ const utilizationBarData = computed(() => {
     font-size: 12px;
     font-weight: 600;
     color: #165DFF;
+  }
+}
+
+.device-stats-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.device-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .device-stat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .device-stat-label {
+    font-size: 11px;
+    color: #86909C;
+  }
+
+  .device-stat-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
   }
 }
 

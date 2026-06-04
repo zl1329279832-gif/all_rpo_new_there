@@ -4,6 +4,7 @@ import { WarehouseScene } from '../three/core/WarehouseScene'
 import { useInventoryStore } from '../store/useInventoryStore'
 import { useDeviceStore } from '../store/useDeviceStore'
 import { useSceneStore } from '../store/useSceneStore'
+import type { TaskData } from '../types'
 
 const containerRef = ref<HTMLElement | null>(null)
 let warehouseScene: WarehouseScene | null = null
@@ -29,6 +30,12 @@ onMounted(() => {
       }
     })
     
+    warehouseScene.setLabelsVisible(sceneStore.showLabels)
+
+    if (sceneStore.animationPaused) {
+      warehouseScene.pauseAnimation()
+    }
+
     warehouseScene.setOnLocationClick((locationId) => {
       inventoryStore.selectLocation(locationId)
     })
@@ -52,6 +59,38 @@ watch(() => sceneStore.currentZone, (zone) => {
     warehouseScene.moveToZone(zone)
   }
 })
+
+watch(() => sceneStore.showLabels, (visible) => {
+  if (warehouseScene) {
+    warehouseScene.setLabelsVisible(visible)
+  }
+})
+
+watch(() => sceneStore.animationPaused, (paused) => {
+  if (warehouseScene) {
+    if (paused) {
+      warehouseScene.pauseAnimation()
+    } else {
+      warehouseScene.resumeAnimation()
+    }
+  }
+})
+
+watch(() => sceneStore.showPaths, (show) => {
+  if (warehouseScene) {
+    if (show && sceneStore.currentPath.length > 0) {
+      warehouseScene.showPath(sceneStore.currentPath)
+    } else {
+      warehouseScene.clearPath()
+    }
+  }
+})
+
+watch(() => sceneStore.currentPath, (path) => {
+  if (warehouseScene && sceneStore.showPaths && path.length > 0) {
+    warehouseScene.showPath(path)
+  }
+}, { deep: true })
 
 function resetCamera() {
   warehouseScene?.resetCamera()
@@ -94,10 +133,35 @@ function playInboundAnimation() {
   }
 }
 
+function showPath(locationIds: string[]) {
+  warehouseScene?.showPath(locationIds)
+}
+
+function clearPath() {
+  warehouseScene?.clearPath()
+}
+
+function pauseAnimation() {
+  warehouseScene?.pauseAnimation()
+}
+
+function resumeAnimation() {
+  warehouseScene?.resumeAnimation()
+}
+
+function addTask(task: TaskData) {
+  deviceStore.addTask(task)
+}
+
 defineExpose({
   resetCamera,
   playStackerAnimation,
   playInboundAnimation,
+  showPath,
+  clearPath,
+  pauseAnimation,
+  resumeAnimation,
+  addTask,
 })
 </script>
 
