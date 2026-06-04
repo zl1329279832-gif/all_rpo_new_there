@@ -1,14 +1,33 @@
 import sqlite3
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 
 from database.connection import DatabaseConnection
 from models.sample import Sample
+from config.settings import STATUS_TRANSITION_RULES, STATUS_DESCRIPTIONS
 
 
 class SampleService:
     def __init__(self):
         self.db = DatabaseConnection()
+
+    def can_transition_status(self, current_status: str, new_status: str) -> Tuple[bool, str]:
+        if current_status == new_status:
+            return True, "状态未变更"
+
+        allowed_statuses = STATUS_TRANSITION_RULES.get(current_status, [])
+        if new_status in allowed_statuses:
+            return True, "状态切换合法"
+        else:
+            if not allowed_statuses:
+                return False, f"当前状态 '{current_status}' 不允许切换到任何状态"
+            return False, f"不允许从 '{current_status}' 切换到 '{new_status}'。\n允许切换到的状态: {', '.join(allowed_statuses)}"
+
+    def get_allowed_transitions(self, current_status: str) -> List[str]:
+        return STATUS_TRANSITION_RULES.get(current_status, [])
+
+    def get_status_description(self, status: str) -> str:
+        return STATUS_DESCRIPTIONS.get(status, "")
 
     def sample_no_exists(self, sample_no: str, exclude_id: Optional[int] = None) -> bool:
         sql = "SELECT id FROM samples WHERE sample_no = ?"
@@ -120,6 +139,15 @@ class SampleService:
 
         self._log_audit(sample_id, "删除", operator, f"删除样品: {sample.sample_no}")
 
+        from services.attachment_service import AttachmentService
+        attachment_service = AttachmentService()
+        attachments = attachment_service.get_attachments_by_sample_id(sample_id)
+        for att in attachments:
+            try:
+                attachment_service.delete_attachment(att.id, delete_file=True)
+            except Exception:
+                pass
+
         sql = "DELETE FROM samples WHERE id = ?"
         self.db.execute(sql, (sample_id,))
         return True
@@ -201,23 +229,35 @@ class SampleService:
         result = self.db.fetch_one(sql, tuple(params))
         return result['count'] if result else 0
 
-    def update_status(self, sample_id: int, new_status: str, operator: str = "系统") -> bool:
+    def update_status(self, sample_id: int, new_status: str, operator: str = "系统", reason: str = "") -> bool:
         sample = self.get_sample_by_id(sample_id)
         if not sample:
             raise ValueError("样品不存在")
 
         old_status = sample.status
+
+        can_transition, message = self.can_transition_status(old_status, new_status)
+        if not can_transition:
+            raise ValueError(message)
+
+        if old_status == new_status:
+            return True
+
         sample.status = new_status
         sample.updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         sql = "UPDATE samples SET status = ?, updated_at = ? WHERE id = ?"
         self.db.execute(sql, (new_status, sample.updated_at, sample_id))
 
+        remarks = f"状态从 {old_status} 变为 {new_status}"
+        if reason:
+            remarks += f"，原因: {reason}"
+
         self._log_audit(
             sample_id,
             "状态变更",
             operator,
-            f"状态从 {old_status} 变为 {new_status}",
+            remarks,
             "status",
             old_status,
             new_status
@@ -231,7 +271,7 @@ class SampleService:
         result = self.db.fetch_one("SELECT COUNT(*) as count FROM samples")
         stats['total'] = result['count'] if result else 0
 
-        statuses = ["待检测", "检测中", "检测完成", "报告已生成", "已归档"]
+        statuses = ["待检测", "检测中", "检测完成", "报告已生成", "已归档", "已作废"]
         for status in statuses:
             result = self.db.fetch_one(
                 "SELECT COUNT(*) as count FROM samples WHERE status = ?",
@@ -239,11 +279,37 @@ class SampleService:
             )
             stats[status] = result['count'] if result else 0
 
+        for status in statuses:
+            if stats['total'] > 0:
+                stats[f'{status}_rate'] = round((stats[status] / stats['total']) * 100, 1)
+            else:
+                stats[f'{status}_rate'] = 0.0
+
         result = self.db.fetch_one("""
             SELECT COUNT(*) as count FROM samples 
             WHERE DATE(receive_time) = DATE('now')
         """)
         stats['today'] = result['count'] if result else 0
+
+        completed_count = stats.get('检测完成', 0) + stats.get('报告已生成', 0) + stats.get('已归档', 0)
+        stats['completed'] = completed_count
+        if stats['total'] > 0:
+            stats['completion_rate'] = round((completed_count / stats['total']) * 100, 1)
+        else:
+            stats['completion_rate'] = 0.0
+
+        stats['abnormal'] = stats.get('已作废', 0)
+
+        tester_stats = self.db.fetch_all("""
+            SELECT tester, COUNT(*) as count 
+            FROM test_records 
+            GROUP BY tester 
+            ORDER BY count DESC
+        """)
+        stats['tester_workload'] = [
+            {'tester': row['tester'], 'count': row['count']}
+            for row in tester_stats
+        ]
 
         return stats
 

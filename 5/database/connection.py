@@ -24,16 +24,24 @@ class DatabaseConnection:
         try:
             self._connection = sqlite3.connect(
                 str(DATABASE_PATH),
-                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+                check_same_thread=False
             )
             self._connection.row_factory = sqlite3.Row
             self._connection.execute("PRAGMA foreign_keys = ON")
+            self._connection.execute("PRAGMA journal_mode = WAL")
+            self._connection.execute("PRAGMA synchronous = NORMAL")
         except sqlite3.Error as e:
             raise Exception(f"数据库连接失败: {str(e)}")
 
     def get_connection(self) -> sqlite3.Connection:
         if self._connection is None:
             self._connect()
+        else:
+            try:
+                self._connection.execute("SELECT 1")
+            except (sqlite3.ProgrammingError, sqlite3.Error):
+                self._connect()
         return self._connection
 
     def close(self):

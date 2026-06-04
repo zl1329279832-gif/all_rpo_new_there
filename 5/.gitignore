@@ -2,6 +2,8 @@
 venv/
 env/
 .env
+.venv/
+virtualenv/
 
 # Python缓存
 __pycache__/
@@ -24,15 +26,22 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+pip-log.txt
+pip-delete-this-directory.txt
 
 # SQLite数据库
 *.db
 *.sqlite
 *.sqlite3
+data/
+*.db-journal
+*.db-wal
+*.db-shm
 
 # 附件目录
 attachments/
 uploads/
+upload/
 
 # 导出报告
 reports/
@@ -41,6 +50,7 @@ exports/
 *.docx
 *.xlsx
 *.csv
+*.xls
 
 # 备份文件
 backup/
@@ -48,16 +58,26 @@ backups/
 *.bak
 *.zip
 *.tar.gz
+*.tar
+*.7z
+*.rar
 
 # 打包产物
 dist/
 build/
 *.spec
 *.exe
+*.msi
+*.deb
+*.rpm
+*.dmg
+*.pkg
 
 # 日志文件
 logs/
 *.log
+*.log.*
+nohup.out
 
 # 编辑器配置
 .vscode/
@@ -66,7 +86,31 @@ logs/
 *.swo
 *~
 .DS_Store
+Thumbs.db
+*.iml
+*.ipr
+*.iws
 
 # 临时文件
 *.tmp
 *.temp
+*.bak
+*.swp
+*.swo
+
+# 测试覆盖率
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+htmlcov/
+.tox/
+
+# 打包生成的文件
+laboratory.spec
+*.manifest
+*.application
+
+# 环境变量文件
+.env.local
+.env.*.local

@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from utils.error_handler import ErrorHandler
 
 
 class DoctorAnalysisPage:
@@ -9,28 +10,33 @@ class DoctorAnalysisPage:
 
     def render(self):
         if not st.session_state.get('data_loaded', False):
-            st.warning("请先导入数据")
+            st.warning("⚠️ 请先导入数据")
             return
 
         st.header("👨‍⚕️ 医生分析")
 
-        doc_metrics = self.metrics.get_doctor_metrics()
-        if doc_metrics is None:
-            st.info("暂无医生数据")
-            return
+        try:
+            doc_metrics = self.metrics.get_doctor_metrics()
+            if doc_metrics is None or len(doc_metrics) == 0:
+                st.warning("⚠️ 暂无医生分析数据，请检查是否已上传医生信息、就诊记录等必要数据")
+                return
 
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            self._render_doctor_selector(doc_metrics)
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                self._render_doctor_selector(doc_metrics)
 
-        with col2:
-            self._render_doctor_ranking(doc_metrics)
+            with col2:
+                self._render_doctor_ranking(doc_metrics)
 
-        st.divider()
-        self._render_doctor_details(doc_metrics)
+            st.divider()
+            self._render_doctor_details(doc_metrics)
 
-        st.divider()
-        self._render_workload_analysis(doc_metrics)
+            st.divider()
+            self._render_workload_analysis(doc_metrics)
+
+        except Exception as e:
+            error_msg = ErrorHandler.translate_error(e, "医生分析")
+            ErrorHandler.display_error(f"❌ 医生分析失败：{error_msg}")
 
     def _render_doctor_selector(self, doc_metrics):
         st.subheader("医生筛选")

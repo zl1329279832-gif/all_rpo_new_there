@@ -9,6 +9,7 @@ class DatabaseSchema:
         tables = [
             self._samples_table(),
             self._test_records_table(),
+            self._test_record_changes_table(),
             self._attachments_table(),
             self._audit_logs_table(),
             self._system_settings_table()
@@ -50,6 +51,24 @@ class DatabaseSchema:
             remarks TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (sample_id) REFERENCES samples(id) ON DELETE CASCADE
+        )
+        """
+
+    def _test_record_changes_table(self) -> str:
+        return """
+        CREATE TABLE IF NOT EXISTS test_record_changes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            test_record_id INTEGER NOT NULL,
+            sample_id INTEGER NOT NULL,
+            field_name TEXT NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            change_reason TEXT NOT NULL,
+            operator TEXT NOT NULL,
+            change_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            remarks TEXT,
+            FOREIGN KEY (test_record_id) REFERENCES test_records(id) ON DELETE CASCADE,
             FOREIGN KEY (sample_id) REFERENCES samples(id) ON DELETE CASCADE
         )
         """
@@ -102,6 +121,9 @@ class DatabaseSchema:
             "CREATE INDEX IF NOT EXISTS idx_samples_status ON samples(status)",
             "CREATE INDEX IF NOT EXISTS idx_samples_receive_time ON samples(receive_time)",
             "CREATE INDEX IF NOT EXISTS idx_test_records_sample_id ON test_records(sample_id)",
+            "CREATE INDEX IF NOT EXISTS idx_test_record_changes_test_record_id ON test_record_changes(test_record_id)",
+            "CREATE INDEX IF NOT EXISTS idx_test_record_changes_sample_id ON test_record_changes(sample_id)",
+            "CREATE INDEX IF NOT EXISTS idx_test_record_changes_operator ON test_record_changes(operator)",
             "CREATE INDEX IF NOT EXISTS idx_attachments_sample_id ON attachments(sample_id)",
             "CREATE INDEX IF NOT EXISTS idx_audit_logs_sample_id ON audit_logs(sample_id)"
         ]

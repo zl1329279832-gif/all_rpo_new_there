@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from utils.error_handler import ErrorHandler
 
 
 class PatientExperiencePage:
@@ -10,25 +11,35 @@ class PatientExperiencePage:
 
     def render(self):
         if not st.session_state.get('data_loaded', False):
-            st.warning("请先导入数据")
+            st.warning("⚠️ 请先导入数据")
             return
 
         st.header("😊 患者体验分析")
 
-        sat_dist = self.metrics.get_satisfaction_distribution()
+        try:
+            sat_dist = self.metrics.get_satisfaction_distribution()
+            has_waiting_data = self.data.get('waiting_times') is not None and len(self.data['waiting_times']) > 0
 
-        self._render_satisfaction_overview(sat_dist)
+            if not sat_dist and not has_waiting_data:
+                st.warning("⚠️ 暂无患者体验数据，请检查是否已上传候诊时间、患者满意度等必要数据")
+                return
 
-        st.divider()
+            self._render_satisfaction_overview(sat_dist)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            self._render_satisfaction_radar(sat_dist)
-        with col2:
-            self._render_satisfaction_distribution(sat_dist)
+            st.divider()
 
-        st.divider()
-        self._render_waiting_time_analysis()
+            col1, col2 = st.columns(2)
+            with col1:
+                self._render_satisfaction_radar(sat_dist)
+            with col2:
+                self._render_satisfaction_distribution(sat_dist)
+
+            st.divider()
+            self._render_waiting_time_analysis()
+
+        except Exception as e:
+            error_msg = ErrorHandler.translate_error(e, "患者体验分析")
+            ErrorHandler.display_error(f"❌ 患者体验分析失败：{error_msg}")
 
     def _render_satisfaction_overview(self, sat_dist):
         st.subheader("满意度概览")

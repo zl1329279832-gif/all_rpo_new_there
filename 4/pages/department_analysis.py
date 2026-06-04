@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from utils.error_handler import ErrorHandler
 
 
 class DepartmentAnalysisPage:
@@ -9,29 +10,34 @@ class DepartmentAnalysisPage:
 
     def render(self):
         if not st.session_state.get('data_loaded', False):
-            st.warning("请先导入数据")
+            st.warning("⚠️ 请先导入数据")
             return
 
         st.header("🏥 科室分析")
 
-        dept_metrics = self.metrics.get_department_metrics()
-        if dept_metrics is None:
-            st.info("暂无科室数据")
-            return
+        try:
+            dept_metrics = self.metrics.get_department_metrics()
+            if dept_metrics is None or len(dept_metrics) == 0:
+                st.warning("⚠️ 暂无科室分析数据，请检查是否已上传科室信息、挂号记录等必要数据")
+                return
 
-        self._render_dept_selector(dept_metrics)
+            self._render_dept_selector(dept_metrics)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            self._render_dept_bar_chart(dept_metrics)
-        with col2:
-            self._render_dept_satisfaction_chart(dept_metrics)
+            col1, col2 = st.columns(2)
+            with col1:
+                self._render_dept_bar_chart(dept_metrics)
+            with col2:
+                self._render_dept_satisfaction_chart(dept_metrics)
 
-        st.divider()
-        self._render_dept_details(dept_metrics)
+            st.divider()
+            self._render_dept_details(dept_metrics)
 
-        st.divider()
-        self._render_anomalous_departments()
+            st.divider()
+            self._render_anomalous_departments()
+
+        except Exception as e:
+            error_msg = ErrorHandler.translate_error(e, "科室分析")
+            ErrorHandler.display_error(f"❌ 科室分析失败：{error_msg}")
 
     def _render_dept_selector(self, dept_metrics):
         departments = ['全部'] + dept_metrics['department_name'].tolist()

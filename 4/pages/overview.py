@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from utils.error_handler import ErrorHandler
 
 
 class OverviewPage:
@@ -9,24 +10,34 @@ class OverviewPage:
 
     def render(self):
         if not st.session_state.get('data_loaded', False):
-            st.warning("请先导入数据")
+            st.warning("⚠️ 请先导入数据")
             return
 
         st.header("📊 运营总览")
 
-        overview_metrics = self.metrics.get_overview_metrics()
-        self._render_kpi_cards(overview_metrics)
+        try:
+            overview_metrics = self.metrics.get_overview_metrics()
 
-        st.divider()
+            if not overview_metrics:
+                st.warning("⚠️ 无法获取运营数据，请检查是否已上传挂号记录、就诊记录等必要数据")
+                return
 
-        col1, col2 = st.columns(2)
-        with col1:
-            self._render_daily_trend()
-        with col2:
-            self._render_monthly_trend()
+            self._render_kpi_cards(overview_metrics)
 
-        st.divider()
-        self._render_patient_type_distribution(overview_metrics)
+            st.divider()
+
+            col1, col2 = st.columns(2)
+            with col1:
+                self._render_daily_trend()
+            with col2:
+                self._render_monthly_trend()
+
+            st.divider()
+            self._render_patient_type_distribution(overview_metrics)
+
+        except Exception as e:
+            error_msg = ErrorHandler.translate_error(e, "运营总览分析")
+            ErrorHandler.display_error(f"❌ 运营总览分析失败：{error_msg}")
 
     def _render_kpi_cards(self, overview_metrics):
         st.subheader("关键指标")
