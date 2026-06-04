@@ -40,7 +40,7 @@ export class WarehouseScene {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
     this.modelFactory = new ModelFactory()
     this.animationController = new AnimationController()
-    this.pickerSystem = new PickerSystem(this.camera, this.scene)
+    this.pickerSystem = new PickerSystem(this.camera)
     this.labelSystem = new LabelSystem(this.camera, this.renderer)
 
     this.init()
@@ -292,16 +292,17 @@ export class WarehouseScene {
     locationsData.forEach((location) => {
       const marker = this.modelFactory.createLocationMarker(
         location.id,
-        1.1,
         0.9,
+        0.75,
         location.occupied
       )
       marker.position.set(
         location.position.x,
-        location.position.y + 0.01,
+        location.position.y - 0.37,
         location.position.z
       )
       this.locationMarkers.set(location.id, marker)
+      this.pickerSystem.addInteractiveObject(marker)
       this.scene.add(marker)
     })
   }
@@ -333,12 +334,12 @@ export class WarehouseScene {
       const boxColors = [0xD4A574, 0x4A90D9, 0xE25C5C, 0x6BCB77]
       const colorIndex = Math.floor(Math.random() * boxColors.length)
       const box = this.modelFactory.createBox('medium', true, boxColors[colorIndex])
-      box.position.y = 0.15
+      box.position.y = 0.13
       cargoGroup.add(box)
 
       cargoGroup.position.set(
         location.position.x,
-        location.position.y - 0.25,
+        location.position.y - 0.38,
         location.position.z
       )
 
@@ -487,31 +488,32 @@ export class WarehouseScene {
 
     const hasActiveTweens = TWEEN.getAll().length > 0
     const hasAnimation = this.animationController.isAnimationPlaying()
+    let shouldUpdateControls = this.controls.enableDamping
 
     if (hasActiveTweens) {
       TWEEN.update()
       this.needsRender = true
+      shouldUpdateControls = true
     }
 
     if (hasAnimation) {
       this.animationController.update()
+      this.updateConveyorAnimation()
       this.needsRender = true
+      shouldUpdateControls = true
     }
 
-    if (this.controls.enableDamping) {
+    if (shouldUpdateControls) {
+      const prevTarget = this.controls.target.clone()
+      const prevPos = this.camera.position.clone()
       this.controls.update()
-      if (this.controls.getAzimuthalAngle() !== 0 || this.controls.getPolarAngle() !== 0) {
+      if (!prevTarget.equals(this.controls.target) || !prevPos.equals(this.camera.position)) {
         this.needsRender = true
       }
     }
 
-    if (hasAnimation) {
-      this.updateConveyorAnimation()
-    }
-
-    this.labelSystem.update()
-
     if (this.needsRender) {
+      this.labelSystem.update()
       this.renderer.render(this.scene, this.camera)
       this.needsRender = false
     }
