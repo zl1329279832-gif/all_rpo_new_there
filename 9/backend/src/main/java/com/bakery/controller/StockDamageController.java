@@ -47,6 +47,6 @@ public class StockDamageController {
                                @RequestParam Integer status,
                                @RequestParam(required = false) String auditOpinion) {
         stockDamageService.auditDamage(id, status, auditOpinion);
-        return Result.success("审核完成");
+        return Result.successMsg("审核完成");
     }
 }

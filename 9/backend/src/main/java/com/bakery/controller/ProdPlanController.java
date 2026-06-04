@@ -48,21 +48,21 @@ public class ProdPlanController {
     @PutMapping("/audit/{id}")
     public Result<Void> auditPlan(@PathVariable Long id) {
         prodPlanService.auditPlan(id);
-        return Result.success("审核成功");
+        return Result.successMsg("审核成功");
     }
 
     @ApiOperation("开始生产")
     @PutMapping("/start/{id}")
     public Result<Void> startProduce(@PathVariable Long id) {
         prodPlanService.startProduce(id);
-        return Result.success("已开始生产");
+        return Result.successMsg("已开始生产");
     }
 
     @ApiOperation("完成生产")
     @PutMapping("/complete")
     public Result<Void> completeProduce(@RequestBody ProduceCompleteDTO dto) {
         prodPlanService.completeProduce(dto);
-        return Result.success("生产完成");
+        return Result.successMsg("生产完成");
     }
 
     @ApiOperation("取消生产计划")
@@ -71,6 +71,6 @@ public class ProdPlanController {
         ProdPlan plan = prodPlanService.getById(id);
         plan.setStatus(4);
         prodPlanService.updateById(plan);
-        return Result.success("已取消");
+        return Result.successMsg("已取消");
     }
 }

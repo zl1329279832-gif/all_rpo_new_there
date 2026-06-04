@@ -40,6 +40,13 @@ public class Result<T> implements Serializable {
         return result;
     }
 
+    public static Result<Void> successMsg(String message) {
+        Result<Void> result = new Result<>();
+        result.setCode(200);
+        result.setMessage(message);
+        return result;
+    }
+
     public static <T> Result<T> error(String message) {
         Result<T> result = new Result<>();
         result.setCode(500);

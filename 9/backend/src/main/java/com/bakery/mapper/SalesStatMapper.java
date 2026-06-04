@@ -62,10 +62,10 @@ public interface SalesStatMapper extends BaseMapper<SalesStat> {
             "COALESCE(SUM(d.total_qty), 0) as damageQty, " +
             "COALESCE(SUM(d.total_amount), 0) as damageAmount " +
             "FROM stock_damage d " +
-            "WHERE d.status = 1 AND d.create_time BETWEEN #{startDate} AND #{endDate} " +
+            "WHERE d.status = 1 AND d.create_time >= #{startDate} AND d.create_time < DATE_ADD(#{endDate}, INTERVAL 1 DAY) " +
             "GROUP BY DATE_FORMAT(d.create_time, '%Y-%m-%d') ORDER BY date ASC")
     List<AnalysisVO.DamageTrendVO> getDamageTrend(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
-    @Select("SELECT COALESCE(SUM(total_amount), 0) FROM stock_damage WHERE status = 1 AND create_time BETWEEN #{startDate} AND #{endDate}")
+    @Select("SELECT COALESCE(SUM(total_amount), 0) FROM stock_damage WHERE status = 1 AND create_time >= #{startDate} AND create_time < DATE_ADD(#{endDate}, INTERVAL 1 DAY)")
     BigDecimal getTotalDamageAmount(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

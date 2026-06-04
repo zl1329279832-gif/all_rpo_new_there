@@ -32,6 +32,6 @@ public class AnalysisController {
     @PostMapping("/refresh")
     public Result<Void> refreshCache() {
         analysisService.clearAnalysisCache();
-        return Result.success("缓存已刷新");
+        return Result.successMsg("缓存已刷新");
     }
 }

@@ -45,14 +45,14 @@ public class StockTransferController {
     @PutMapping("/outbound/{id}")
     public Result<Void> confirmOutbound(@PathVariable Long id) {
         stockTransferService.confirmOutbound(id);
-        return Result.success("出库成功");
+        return Result.successMsg("出库成功");
     }
 
     @ApiOperation("确认入库")
     @PutMapping("/inbound/{id}")
     public Result<Void> confirmInbound(@PathVariable Long id) {
         stockTransferService.confirmInbound(id);
-        return Result.success("入库成功");
+        return Result.successMsg("入库成功");
     }
 
     @ApiOperation("取消调拨")
@@ -61,6 +61,6 @@ public class StockTransferController {
         StockTransfer transfer = stockTransferService.getById(id);
         transfer.setStatus(3);
         stockTransferService.updateById(transfer);
-        return Result.success("已取消");
+        return Result.successMsg("已取消");
     }
 }

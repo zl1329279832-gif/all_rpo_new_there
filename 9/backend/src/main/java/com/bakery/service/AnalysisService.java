@@ -43,7 +43,7 @@ public class AnalysisService {
         BigDecimal totalSalesAmount = salesStatMapper.getTotalSalesAmount(startDate, endDate);
         BigDecimal totalCostAmount = salesStatMapper.getTotalCostAmount(startDate, endDate);
         BigDecimal totalSalesQty = salesStatMapper.getTotalSalesQty(startDate, endDate);
-        BigDecimal totalDamageAmount = salesStatMapper.getTotalDamageAmount(startDate.atStartOfDay(), endDate.atTime(23, 59, 59));
+        BigDecimal totalDamageAmount = salesStatMapper.getTotalDamageAmount(startDate, endDate);
 
         vo.setTotalSalesAmount(totalSalesAmount);
         vo.setTotalCostAmount(totalCostAmount);
@@ -74,7 +74,7 @@ public class AnalysisService {
 
         vo.setStoreSales(salesStatMapper.getStoreSales(startDate, endDate));
         vo.setProductRank(salesStatMapper.getProductRank(startDate, endDate));
-        vo.setDamageTrend(salesStatMapper.getDamageTrend(startDate.atStartOfDay(), endDate.atTime(23, 59, 59)));
+        vo.setDamageTrend(salesStatMapper.getDamageTrend(startDate, endDate));
         vo.setWarningStats(batchService.getWarningStats(storeId != null ? storeId : 1L));
 
         redisTemplate.opsForValue().set(cacheKey, vo, 30, TimeUnit.MINUTES);

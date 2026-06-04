@@ -40,7 +40,7 @@ public class StoreDemandController {
     public Result<Void> confirmDemand(@PathVariable Long id,
                                     @RequestBody List<StoreDemandDetail> details) {
         storeDemandService.confirmDemand(id, details);
-        return Result.success("确认成功");
+        return Result.successMsg("确认成功");
     }
 
     @ApiOperation("发货")
@@ -48,13 +48,13 @@ public class StoreDemandController {
     public Result<Void> deliverDemand(@PathVariable Long id,
                                          @RequestBody List<StoreDemandDetail> details) {
         storeDemandService.deliverDemand(id, details);
-        return Result.success("发货成功");
+        return Result.successMsg("发货成功");
     }
 
     @ApiOperation("完成需求")
     @PutMapping("/complete/{id}")
     public Result<Void> completeDemand(@PathVariable Long id) {
         storeDemandService.completeDemand(id);
-        return Result.success("已完成");
+        return Result.successMsg("已完成");
     }
 }
