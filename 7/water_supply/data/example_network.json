@@ -1,0 +1,42 @@
+{
+  "nodes": [
+    {"node_id": "S1", "elevation": 50.0, "demand": 0.0, "is_source": true, "source_head": 80.0, "x": 0.0, "y": 5.0},
+    {"node_id": "S2", "elevation": 45.0, "demand": 0.0, "is_source": true, "source_head": 75.0, "x": 0.0, "y": 0.0},
+    {"node_id": "N1", "elevation": 48.0, "demand": 0.015, "is_source": false, "x": 2.0, "y": 4.0},
+    {"node_id": "N2", "elevation": 46.0, "demand": 0.020, "is_source": false, "x": 2.0, "y": 2.5},
+    {"node_id": "N3", "elevation": 44.0, "demand": 0.010, "is_source": false, "x": 2.0, "y": 1.0},
+    {"node_id": "N4", "elevation": 43.0, "demand": 0.025, "is_source": false, "x": 4.0, "y": 4.0},
+    {"node_id": "N5", "elevation": 42.0, "demand": 0.018, "is_source": false, "x": 4.0, "y": 2.5},
+    {"node_id": "N6", "elevation": 40.0, "demand": 0.012, "is_source": false, "x": 4.0, "y": 1.0},
+    {"node_id": "N7", "elevation": 41.0, "demand": 0.030, "is_source": false, "x": 6.0, "y": 4.0},
+    {"node_id": "N8", "elevation": 39.0, "demand": 0.022, "is_source": false, "x": 6.0, "y": 2.5},
+    {"node_id": "N9", "elevation": 38.0, "demand": 0.016, "is_source": false, "x": 6.0, "y": 1.0},
+    {"node_id": "N10", "elevation": 37.0, "demand": 0.008, "is_source": false, "x": 8.0, "y": 2.5}
+  ],
+  "pipes": [
+    {"pipe_id": "P1", "start_node": "S1", "end_node": "N1", "length": 800.0, "diameter": 0.40, "roughness": 130},
+    {"pipe_id": "P2", "start_node": "S1", "end_node": "N2", "length": 600.0, "diameter": 0.35, "roughness": 130},
+    {"pipe_id": "P3", "start_node": "S2", "end_node": "N3", "length": 500.0, "diameter": 0.35, "roughness": 130},
+    {"pipe_id": "P4", "start_node": "N1", "end_node": "N4", "length": 700.0, "diameter": 0.30, "roughness": 120},
+    {"pipe_id": "P5", "start_node": "N2", "end_node": "N5", "length": 500.0, "diameter": 0.30, "roughness": 120},
+    {"pipe_id": "P6", "start_node": "N3", "end_node": "N6", "length": 600.0, "diameter": 0.30, "roughness": 120},
+    {"pipe_id": "P7", "start_node": "N4", "end_node": "N7", "length": 600.0, "diameter": 0.25, "roughness": 120},
+    {"pipe_id": "P8", "start_node": "N5", "end_node": "N8", "length": 500.0, "diameter": 0.25, "roughness": 120},
+    {"pipe_id": "P9", "start_node": "N6", "end_node": "N9", "length": 500.0, "diameter": 0.25, "roughness": 120},
+    {"pipe_id": "P10", "start_node": "N2", "end_node": "N3", "length": 400.0, "diameter": 0.25, "roughness": 120},
+    {"pipe_id": "P11", "start_node": "N5", "end_node": "N4", "length": 350.0, "diameter": 0.20, "roughness": 120},
+    {"pipe_id": "P12", "start_node": "N5", "end_node": "N6", "length": 400.0, "diameter": 0.20, "roughness": 120},
+    {"pipe_id": "P13", "start_node": "N7", "end_node": "N8", "length": 350.0, "diameter": 0.20, "roughness": 120},
+    {"pipe_id": "P14", "start_node": "N8", "end_node": "N9", "length": 350.0, "diameter": 0.20, "roughness": 120},
+    {"pipe_id": "P15", "start_node": "N7", "end_node": "N10", "length": 600.0, "diameter": 0.20, "roughness": 120},
+    {"pipe_id": "P16", "start_node": "N9", "end_node": "N10", "length": 500.0, "diameter": 0.20, "roughness": 120}
+  ],
+  "pumps": [
+    {"pump_id": "PU1", "node_id": "N4", "head_added": 15.0, "max_flow": 0.08},
+    {"pump_id": "PU2", "node_id": "N8", "head_added": 10.0, "max_flow": 0.05}
+  ],
+  "valves": [
+    {"valve_id": "V1", "pipe_id": "P11", "status": "open", "opening_ratio": 1.0},
+    {"valve_id": "V2", "pipe_id": "P12", "status": "open", "opening_ratio": 1.0}
+  ]
+}
