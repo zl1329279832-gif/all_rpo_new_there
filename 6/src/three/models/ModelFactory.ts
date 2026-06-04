@@ -313,9 +313,9 @@ export class ModelFactory {
     const pallet = new THREE.Group()
     pallet.name = 'pallet'
 
-    const palletWidth = 1.0
-    const palletDepth = 1.0
-    const palletHeight = 0.14
+    const palletWidth = 0.9
+    const palletDepth = 0.8
+    const palletHeight = 0.12
 
     const topDeck = new THREE.Mesh(
       new THREE.BoxGeometry(palletWidth, 0.02, palletDepth),
@@ -373,9 +373,9 @@ export class ModelFactory {
     box.name = 'box'
 
     const dimensions = {
-      small: { w: 0.3, h: 0.25, d: 0.3 },
-      medium: { w: 0.5, h: 0.4, d: 0.5 },
-      large: { w: 0.7, h: 0.55, d: 0.7 },
+      small: { w: 0.25, h: 0.2, d: 0.25 },
+      medium: { w: 0.4, h: 0.3, d: 0.4 },
+      large: { w: 0.6, h: 0.45, d: 0.6 },
     }
 
     const { w, h, d } = dimensions[size]

@@ -27,16 +27,20 @@ export class WarehouseScene {
   private cargoGroups: Map<string, THREE.Group> = new Map()
   private onLocationClick?: (locationId: string) => void
   private onDeviceClick?: (deviceId: string) => void
+  private needsRender: boolean = true
+  private isDragging: boolean = false
+  private lastHoverTime: number = 0
+  private hoverThrottle: number = 50
 
   constructor(container: HTMLElement) {
     this.container = container
     this.scene = new THREE.Scene()
     this.camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000)
-    this.renderer = new THREE.WebGLRenderer({ antialias: true })
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
     this.modelFactory = new ModelFactory()
     this.animationController = new AnimationController()
-    this.pickerSystem = new PickerSystem(this.camera, this.scene)
+    this.pickerSystem = new PickerSystem(this.camera)
     this.labelSystem = new LabelSystem(this.camera, this.renderer)
 
     this.init()
@@ -44,12 +48,12 @@ export class WarehouseScene {
 
   private init(): void {
     this.scene.background = new THREE.Color(0x1a1a2e)
-    this.scene.fog = new THREE.Fog(0x1a1a2e, 30, 80)
+    this.scene.fog = new THREE.Fog(0x1a1a2e, 40, 80)
 
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight)
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
     this.renderer.shadowMap.enabled = true
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.renderer.shadowMap.type = THREE.PCFShadowMap
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.0
 
@@ -70,20 +74,21 @@ export class WarehouseScene {
   }
 
   private setupLighting(): void {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
     this.scene.add(ambientLight)
 
-    const mainLight = new THREE.DirectionalLight(0xffffff, 0.8)
+    const mainLight = new THREE.DirectionalLight(0xffffff, 0.7)
     mainLight.position.set(20, 30, 20)
     mainLight.castShadow = true
-    mainLight.shadow.mapSize.width = 2048
-    mainLight.shadow.mapSize.height = 2048
+    mainLight.shadow.mapSize.width = 1024
+    mainLight.shadow.mapSize.height = 1024
     mainLight.shadow.camera.near = 0.5
     mainLight.shadow.camera.far = 100
     mainLight.shadow.camera.left = -30
     mainLight.shadow.camera.right = 30
     mainLight.shadow.camera.top = 30
     mainLight.shadow.camera.bottom = -30
+    mainLight.shadow.bias = -0.001
     this.scene.add(mainLight)
 
     const lights = this.modelFactory.createLights()
@@ -92,6 +97,19 @@ export class WarehouseScene {
 
   private setupEventListeners(): void {
     window.addEventListener('resize', this.onResize.bind(this))
+
+    this.controls.addEventListener('start', () => {
+      this.isDragging = true
+    })
+
+    this.controls.addEventListener('end', () => {
+      this.isDragging = false
+      this.needsRender = true
+    })
+
+    this.controls.addEventListener('change', () => {
+      this.needsRender = true
+    })
 
     this.renderer.domElement.addEventListener('click', (event) => {
       const intersects = this.pickerSystem.handleClick(event, this.renderer.domElement)
@@ -104,10 +122,15 @@ export class WarehouseScene {
           this.onDeviceClick?.(object.userData.deviceId)
         }
       }
+      this.needsRender = true
     })
 
     this.renderer.domElement.addEventListener('mousemove', (event) => {
-      this.pickerSystem.handleHover(event, this.renderer.domElement)
+      const now = Date.now()
+      if (!this.isDragging && now - this.lastHoverTime > this.hoverThrottle) {
+        this.lastHoverTime = now
+        this.pickerSystem.handleHover(event, this.renderer.domElement)
+      }
     })
   }
 
@@ -269,16 +292,17 @@ export class WarehouseScene {
     locationsData.forEach((location) => {
       const marker = this.modelFactory.createLocationMarker(
         location.id,
-        1.1,
         0.9,
+        0.75,
         location.occupied
       )
       marker.position.set(
         location.position.x,
-        location.position.y + 0.01,
+        location.position.y - 0.37,
         location.position.z
       )
       this.locationMarkers.set(location.id, marker)
+      this.pickerSystem.addInteractiveObject(marker)
       this.scene.add(marker)
     })
   }
@@ -296,7 +320,7 @@ export class WarehouseScene {
   placeCargo(locationId: string, animate: boolean = false): Promise<void> {
     return new Promise((resolve) => {
       const location = this.locations.get(locationId)
-      if (!location || !location.currentCargo) {
+      if (!location) {
         resolve()
         return
       }
@@ -310,12 +334,12 @@ export class WarehouseScene {
       const boxColors = [0xD4A574, 0x4A90D9, 0xE25C5C, 0x6BCB77]
       const colorIndex = Math.floor(Math.random() * boxColors.length)
       const box = this.modelFactory.createBox('medium', true, boxColors[colorIndex])
-      box.position.y = 0.14
+      box.position.y = 0.13
       cargoGroup.add(box)
 
       cargoGroup.position.set(
         location.position.x,
-        location.position.y + 0.05,
+        location.position.y - 0.38,
         location.position.z
       )
 
@@ -462,13 +486,37 @@ export class WarehouseScene {
 
     this.animationFrameId = requestAnimationFrame(this.animate.bind(this))
 
-    TWEEN.update()
-    this.controls.update()
-    this.animationController.update()
-    this.labelSystem.update()
-    this.updateConveyorAnimation()
+    const hasActiveTweens = TWEEN.getAll().length > 0
+    const hasAnimation = this.animationController.isAnimationPlaying()
+    let shouldUpdateControls = this.controls.enableDamping
 
-    this.renderer.render(this.scene, this.camera)
+    if (hasActiveTweens) {
+      TWEEN.update()
+      this.needsRender = true
+      shouldUpdateControls = true
+    }
+
+    if (hasAnimation) {
+      this.animationController.update()
+      this.updateConveyorAnimation()
+      this.needsRender = true
+      shouldUpdateControls = true
+    }
+
+    if (shouldUpdateControls) {
+      const prevTarget = this.controls.target.clone()
+      const prevPos = this.camera.position.clone()
+      this.controls.update()
+      if (!prevTarget.equals(this.controls.target) || !prevPos.equals(this.camera.position)) {
+        this.needsRender = true
+      }
+    }
+
+    if (this.needsRender) {
+      this.labelSystem.update()
+      this.renderer.render(this.scene, this.camera)
+      this.needsRender = false
+    }
   }
 
   private updateConveyorAnimation(): void {

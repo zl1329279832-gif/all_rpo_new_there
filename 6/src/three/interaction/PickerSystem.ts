@@ -2,50 +2,58 @@ import * as THREE from 'three'
 
 export class PickerSystem {
   private camera: THREE.Camera
-  private scene: THREE.Scene
   private raycaster: THREE.Raycaster
   private mouse: THREE.Vector2
   private hoveredObject: THREE.Object3D | null = null
   private originalMaterials: Map<THREE.Object3D, THREE.Material | THREE.Material[]> = new Map()
   private onHover?: (object: THREE.Object3D | null) => void
   private onClick?: (object: THREE.Object3D) => void
+  private interactiveObjects: THREE.Object3D[] = []
 
-  constructor(camera: THREE.Camera, scene: THREE.Scene) {
+  constructor(camera: THREE.Camera) {
     this.camera = camera
-    this.scene = scene
     this.raycaster = new THREE.Raycaster()
     this.mouse = new THREE.Vector2()
+  }
+
+  addInteractiveObject(object: THREE.Object3D): void {
+    if (!this.interactiveObjects.includes(object)) {
+      this.interactiveObjects.push(object)
+    }
+  }
+
+  removeInteractiveObject(object: THREE.Object3D): void {
+    const index = this.interactiveObjects.indexOf(object)
+    if (index > -1) {
+      this.interactiveObjects.splice(index, 1)
+    }
+  }
+
+  clearInteractiveObjects(): void {
+    this.interactiveObjects = []
   }
 
   handleClick(event: MouseEvent, domElement: HTMLElement): THREE.Intersection[] {
     this.updateMousePosition(event, domElement)
     this.raycaster.setFromCamera(this.mouse, this.camera)
 
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true)
-    
-    const locationIntersects = intersects.filter(
-      (i) => i.object.userData.type === 'location' || i.object.userData.type === 'device'
-    )
+    const intersects = this.raycaster.intersectObjects(this.interactiveObjects, false)
 
-    if (locationIntersects.length > 0) {
-      this.onClick?.(locationIntersects[0].object)
+    if (intersects.length > 0) {
+      this.onClick?.(intersects[0].object)
     }
 
-    return locationIntersects
+    return intersects
   }
 
   handleHover(event: MouseEvent, domElement: HTMLElement): THREE.Object3D | null {
     this.updateMousePosition(event, domElement)
     this.raycaster.setFromCamera(this.mouse, this.camera)
 
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true)
-    
-    const hoverableIntersects = intersects.filter(
-      (i) => i.object.userData.type === 'location' || i.object.userData.type === 'device'
-    )
+    const intersects = this.raycaster.intersectObjects(this.interactiveObjects, false)
 
-    if (hoverableIntersects.length > 0) {
-      const newHovered = hoverableIntersects[0].object
+    if (intersects.length > 0) {
+      const newHovered = intersects[0].object
       
       if (this.hoveredObject !== newHovered) {
         this.restoreMaterial()
@@ -110,5 +118,6 @@ export class PickerSystem {
   dispose(): void {
     this.restoreMaterial()
     this.originalMaterials.clear()
+    this.interactiveObjects = []
   }
 }
