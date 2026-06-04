@@ -16,7 +16,7 @@ class OverviewPage:
         st.header("📊 运营总览")
 
         try:
-            overview_metrics = self._get_cached_overview_metrics()
+            overview_metrics = self.metrics.get_overview_metrics()
 
             if not overview_metrics:
                 st.warning("⚠️ 无法获取运营数据，请检查是否已上传挂号记录、就诊记录等必要数据")
@@ -41,46 +41,6 @@ class OverviewPage:
         except Exception as e:
             error_msg = ErrorHandler.translate_error(e, "运营总览分析")
             ErrorHandler.display_error(f"❌ 运营总览分析失败：{error_msg}")
-
-    @st.cache_data(show_spinner="正在计算关键指标...")
-    def _get_cached_overview_metrics(_self):
-        return _self.metrics.get_overview_metrics()
-
-    @st.cache_data(show_spinner="正在计算每日趋势...")
-    def _get_cached_daily_trends(_self):
-        return _self.metrics.get_daily_trends()
-
-    @st.cache_data(show_spinner="正在计算月度趋势...")
-    def _get_cached_monthly_trends(_self):
-        return _self.metrics.get_monthly_trends()
-
-    @st.cache_data(show_spinner="正在计算月环比变化...")
-    def _get_cached_mom_changes(_self):
-        return _self.metrics.get_mom_changes()
-
-    @st.cache_data(show_spinner="正在计算工作日周末对比...")
-    def _get_cached_weekday_weekend(_self):
-        return _self.metrics.get_weekday_weekend_comparison()
-
-    @st.cache_data(show_spinner="正在计算高峰时段...")
-    def _get_cached_peak_hours(_self):
-        return _self.metrics.get_peak_hours()
-
-    @st.cache_data(show_spinner="正在计算科室容量利用率...")
-    def _get_cached_capacity_utilization(_self):
-        return _self.metrics.get_department_capacity_utilization()
-
-    @st.cache_data(show_spinner="正在计算医生负荷均衡度...")
-    def _get_cached_doctor_workload(_self):
-        return _self.metrics.get_doctor_workload_balance()
-
-    @st.cache_data(show_spinner="正在计算候诊时间分层...")
-    def _get_cached_wait_time_stratification(_self):
-        return _self.metrics.get_wait_time_stratification()
-
-    @st.cache_data(show_spinner="正在分析异常指标原因...")
-    def _get_cached_anomaly_causes(_self):
-        return _self.metrics.get_anomaly_cause_analysis()
 
     def _render_kpi_cards(self, overview_metrics):
         st.subheader("关键指标")
@@ -121,7 +81,7 @@ class OverviewPage:
 
     def _render_daily_trend(self):
         st.subheader("每日门诊量趋势")
-        daily_data = self._get_cached_daily_trends()
+        daily_data = self.metrics.get_daily_trends()
         if daily_data is not None and len(daily_data) > 0:
             fig = self.charts.create_daily_trend_chart(daily_data)
             if fig:
@@ -131,7 +91,7 @@ class OverviewPage:
 
     def _render_monthly_trend(self):
         st.subheader("月度运营对比")
-        monthly_data = self._get_cached_monthly_trends()
+        monthly_data = self.metrics.get_monthly_trends()
         if monthly_data is not None and len(monthly_data) > 0:
             fig = self.charts.create_monthly_comparison_chart(monthly_data)
             if fig:
@@ -199,7 +159,7 @@ class OverviewPage:
 
     def _render_mom_changes(self):
         st.markdown("### 📈 月环比变化")
-        mom_data = self._get_cached_mom_changes()
+        mom_data = self.metrics.get_mom_changes()
 
         if not mom_data:
             st.info("暂无月环比数据")
@@ -218,7 +178,6 @@ class OverviewPage:
         for idx, metric_key in enumerate(metrics_order):
             if metric_key in mom_data and len(mom_data[metric_key]) >= 2:
                 latest = mom_data[metric_key][-1]
-                prev = mom_data[metric_key][-2]
                 mom_rate = latest.get('环比变化率')
 
                 with cols[idx]:
@@ -256,7 +215,7 @@ class OverviewPage:
 
     def _render_weekday_weekend(self):
         st.markdown("### 📅 工作日vs周末")
-        ww_data = self._get_cached_weekday_weekend()
+        ww_data = self.metrics.get_weekday_weekend_comparison()
 
         if not ww_data:
             st.info("暂无工作日周末对比数据")
@@ -274,8 +233,8 @@ class OverviewPage:
             st.dataframe(ww_df, use_container_width=True, hide_index=True)
 
             chart_data = pd.DataFrame([
-                {'day_type': '工作日', 'avg_registrations': ww_data.get('挂号量', {}).get('工作日日均', 0), 'avg_visits': ww_data.get('就诊量', {}).get('工作日', 0) // max(1, ww_data.get('挂号量', {}).get('工作日', 0) // max(1, ww_data.get('挂号量', {}).get('工作日日均', 1)))},
-                {'day_type': '周末', 'avg_registrations': ww_data.get('挂号量', {}).get('周末日均', 0), 'avg_visits': ww_data.get('就诊量', {}).get('周末', 0) // max(1, ww_data.get('挂号量', {}).get('周末', 0) // max(1, ww_data.get('挂号量', {}).get('周末日均', 1)))}
+                {'day_type': '工作日', 'avg_registrations': ww_data.get('挂号量', {}).get('工作日日均', 0)},
+                {'day_type': '周末', 'avg_registrations': ww_data.get('挂号量', {}).get('周末日均', 0)}
             ])
             fig = self.charts.create_weekday_weekend_chart(chart_data)
             if fig:
@@ -283,7 +242,7 @@ class OverviewPage:
 
     def _render_peak_hours(self):
         st.markdown("### 🚦 就诊高峰时段")
-        hours_data = self._get_cached_peak_hours()
+        hours_data = self.metrics.get_peak_hours()
 
         if hours_data is None or len(hours_data) == 0:
             st.info("暂无高峰时段数据")
@@ -299,7 +258,7 @@ class OverviewPage:
 
     def _render_capacity_utilization(self):
         st.markdown("### 🏥 科室容量利用率")
-        cap_data = self._get_cached_capacity_utilization()
+        cap_data = self.metrics.get_department_capacity_utilization()
 
         if cap_data is None or len(cap_data) == 0:
             st.info("暂无科室容量数据")
@@ -315,7 +274,7 @@ class OverviewPage:
 
     def _render_doctor_workload_balance(self):
         st.markdown("### 👨‍⚕️ 医生负荷均衡度")
-        wl_data = self._get_cached_doctor_workload()
+        wl_data = self.metrics.get_doctor_workload_balance()
 
         if not wl_data:
             st.info("暂无医生负荷数据")
@@ -342,7 +301,7 @@ class OverviewPage:
 
     def _render_wait_time_stratification(self):
         st.markdown("### ⏱️ 候诊时间分层")
-        wts_data = self._get_cached_wait_time_stratification()
+        wts_data = self.metrics.get_wait_time_stratification()
 
         if not wts_data:
             st.info("暂无候诊时间数据")
@@ -369,7 +328,7 @@ class OverviewPage:
 
     def _render_anomaly_cause_analysis(self):
         st.markdown("### 🔍 异常指标原因分析")
-        anomaly_data = self._get_cached_anomaly_causes()
+        anomaly_data = self.metrics.get_anomaly_cause_analysis()
 
         if not anomaly_data:
             st.success("✅ 未发现明显异常指标")

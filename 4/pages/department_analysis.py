@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import numpy as np
 import plotly.graph_objects as go
 from utils.error_handler import ErrorHandler
 
@@ -125,8 +125,7 @@ class DepartmentAnalysisPage:
             )
             st.session_state.dept_filter_patient_types = selected_types
 
-    @st.cache_data
-    def _get_filtered_data(_self):
+    def _get_filtered_data(self):
         filtered = {}
         data = st.session_state.data
 
@@ -181,8 +180,7 @@ class DepartmentAnalysisPage:
         st.divider()
         self._render_anomalous_departments()
 
-    @st.cache_data
-    def _get_filtered_dept_metrics(_self, filtered_data):
+    def _get_filtered_dept_metrics(self, filtered_data):
         if filtered_data.get('registrations') is not None and filtered_data.get('departments') is not None:
             reg_df = filtered_data['registrations']
             dept_df = filtered_data['departments']
@@ -378,8 +376,7 @@ class DepartmentAnalysisPage:
         with col2:
             self._render_capacity_table(cap_data)
 
-    @st.cache_data
-    def _get_capacity_data(_self, filtered_data):
+    def _get_capacity_data(self, filtered_data):
         if filtered_data.get('visits') is not None and filtered_data.get('doctors') is not None and filtered_data.get('departments') is not None:
             visit_df = filtered_data['visits']
             doctor_df = filtered_data['doctors']
@@ -495,8 +492,7 @@ class DepartmentAnalysisPage:
             st.divider()
             self._render_peak_hours_summary(peak_hours)
 
-    @st.cache_data
-    def _get_peak_hours_data(_self, filtered_data):
+    def _get_peak_hours_data(self, filtered_data):
         reg_df = filtered_data.get('registrations')
         if reg_df is None or 'reg_time' not in reg_df.columns:
             return None, None
@@ -647,6 +643,3 @@ class DepartmentAnalysisPage:
                 st.markdown("---")
 
         st.success("✅ 改进建议生成完成！")
-
-
-import numpy as np
