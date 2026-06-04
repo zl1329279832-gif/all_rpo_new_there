@@ -7,16 +7,16 @@ import os
 
 def generate_departments():
     departments = [
-        {'department_id': 'D001', 'department_name': '内科', 'type': '临床科室'},
-        {'department_id': 'D002', 'department_name': '外科', 'type': '临床科室'},
-        {'department_id': 'D003', 'department_name': '儿科', 'type': '临床科室'},
-        {'department_id': 'D004', 'department_name': '妇产科', 'type': '临床科室'},
-        {'department_id': 'D005', 'department_name': '眼科', 'type': '临床科室'},
-        {'department_id': 'D006', 'department_name': '口腔科', 'type': '临床科室'},
-        {'department_id': 'D007', 'department_name': '皮肤科', 'type': '临床科室'},
-        {'department_id': 'D008', 'department_name': '骨科', 'type': '临床科室'},
-        {'department_id': 'D009', 'department_name': '神经内科', 'type': '临床科室'},
-        {'department_id': 'D010', 'department_name': '心血管内科', 'type': '临床科室'},
+        {'department_id': 'D001', 'department_name': '内科', 'type': '临床科室', 'daily_capacity': 80},
+        {'department_id': 'D002', 'department_name': '外科', 'type': '临床科室', 'daily_capacity': 50},
+        {'department_id': 'D003', 'department_name': '儿科', 'type': '临床科室', 'daily_capacity': 60},
+        {'department_id': 'D004', 'department_name': '妇产科', 'type': '临床科室', 'daily_capacity': 40},
+        {'department_id': 'D005', 'department_name': '眼科', 'type': '临床科室', 'daily_capacity': 30},
+        {'department_id': 'D006', 'department_name': '口腔科', 'type': '临床科室', 'daily_capacity': 25},
+        {'department_id': 'D007', 'department_name': '皮肤科', 'type': '临床科室', 'daily_capacity': 20},
+        {'department_id': 'D008', 'department_name': '骨科', 'type': '临床科室', 'daily_capacity': 30},
+        {'department_id': 'D009', 'department_name': '神经内科', 'type': '临床科室', 'daily_capacity': 25},
+        {'department_id': 'D010', 'department_name': '心血管内科', 'type': '临床科室', 'daily_capacity': 35},
     ]
     return pd.DataFrame(departments)
 
@@ -29,11 +29,15 @@ def generate_doctors(departments_df):
     ]
     titles = ['主任医师', '副主任医师', '主治医师', '住院医师']
     title_weights = [0.2, 0.3, 0.3, 0.2]
+    low_doctor_depts = {'D001', 'D010'}
 
     doctors = []
     doctor_id = 1
     for _, dept in departments_df.iterrows():
-        num_doctors = random.randint(2, 4)
+        if dept['department_id'] in low_doctor_depts:
+            num_doctors = 2
+        else:
+            num_doctors = random.randint(3, 4)
         for i in range(num_doctors):
             doctors.append({
                 'doctor_id': f'DOC{doctor_id:03d}',
@@ -46,19 +50,39 @@ def generate_doctors(departments_df):
     return pd.DataFrame(doctors)
 
 
-def generate_registrations(departments_df, doctors_df, num_records=1200):
+def generate_registrations(departments_df, doctors_df, num_records=1500):
     patient_types = ['普通门诊', '专家门诊', '急诊', '特需门诊']
     patient_type_weights = [0.5, 0.25, 0.15, 0.1]
 
     start_date = datetime(2024, 1, 1)
     end_date = datetime(2024, 3, 31)
     date_range = [start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)]
+    workdays = [d for d in date_range if d.weekday() < 5]
+    weekends = [d for d in date_range if d.weekday() >= 5]
+
+    dept_ids = departments_df['department_id'].tolist()
+    dept_weights = []
+    for did in dept_ids:
+        if did == 'D001':
+            dept_weights.append(0.21)
+        elif did == 'D010':
+            dept_weights.append(0.21)
+        else:
+            dept_weights.append(0.0725)
+    total = sum(dept_weights)
+    dept_weights = [w / total for w in dept_weights]
 
     registrations = []
     for reg_id in range(1, num_records + 1):
-        reg_date = random.choice(date_range)
-        dept_row = departments_df.sample(n=1).iloc[0]
-        dept_id = dept_row['department_id']
+        r = random.random()
+        if r < 0.3:
+            reg_date = random.choice(weekends)
+            is_weekend = 1
+        else:
+            reg_date = random.choice(workdays)
+            is_weekend = 0
+
+        dept_id = np.random.choice(dept_ids, p=dept_weights)
 
         dept_doctors = doctors_df[doctors_df['department_id'] == dept_id]
         if len(dept_doctors) > 0:
@@ -67,7 +91,13 @@ def generate_registrations(departments_df, doctors_df, num_records=1200):
         else:
             doctor_id = doctors_df.sample(n=1).iloc[0]['doctor_id']
 
-        hour = random.randint(7, 17)
+        r2 = random.random()
+        if is_weekend:
+            hour = random.randint(8, 16)
+        elif r2 < 0.4:
+            hour = random.choice([8, 9, 10])
+        else:
+            hour = random.choice([11, 12, 13, 14, 15, 16, 17])
         minute = random.randint(0, 59)
         reg_time = f'{hour:02d}:{minute:02d}:00'
 
@@ -79,7 +109,7 @@ def generate_registrations(departments_df, doctors_df, num_records=1200):
             'reg_date': reg_date.strftime('%Y-%m-%d'),
             'reg_time': reg_time,
             'patient_type': np.random.choice(patient_types, p=patient_type_weights),
-            'is_weekend': 1 if reg_date.weekday() >= 5 else 0
+            'is_weekend': is_weekend
         })
 
     return pd.DataFrame(registrations)
@@ -98,6 +128,8 @@ def generate_visits(registrations_df):
         'D009': ['头痛', '偏头痛', '失眠', '脑血管病', '帕金森'],
         'D010': ['冠心病', '心律失常', '心衰', '高血压心脏病', '心肌梗死']
     }
+    high_exam_depts = {'D001', 'D010'}
+    low_exam_depts = {'D006', 'D007'}
 
     visits = []
     for idx, reg in registrations_df.iterrows():
@@ -111,6 +143,13 @@ def generate_visits(registrations_df):
         else:
             actual_visit_date = visit_date + timedelta(days=random.randint(2, 7))
 
+        if dept_id in high_exam_depts:
+            exam_prob = 0.8
+        elif dept_id in low_exam_depts:
+            exam_prob = 0.3
+        else:
+            exam_prob = 0.5
+
         visits.append({
             'visit_id': f'VIS{idx + 1:05d}',
             'reg_id': reg['reg_id'],
@@ -119,7 +158,7 @@ def generate_visits(registrations_df):
             'visit_date': actual_visit_date.strftime('%Y-%m-%d'),
             'diagnosis': random.choice(dept_diagnoses),
             'visit_duration_minutes': random.randint(5, 30),
-            'has_examination': 1 if random.random() < 0.6 else 0,
+            'has_examination': 1 if random.random() < exam_prob else 0,
             'has_medication': 1 if random.random() < 0.7 else 0
         })
     return pd.DataFrame(visits)
@@ -172,16 +211,21 @@ def generate_medications(visits_df):
         '外用药': [('红霉素软膏', 8, 18), ('碘伏', 5, 12), ('皮炎平', 15, 30)]
     }
 
+    high_price_depts = {'D001', 'D010'}
+
     medications = []
     med_id = 1
     for _, visit in visits_df.iterrows():
         if visit['has_medication'] == 1:
+            dept_id = visit['department_id']
             num_drugs = random.randint(1, 4)
             categories = random.sample(list(drug_categories.keys()), min(num_drugs, len(drug_categories)))
             for cat in categories:
                 drug = random.choice(drug_categories[cat])
                 quantity = random.randint(1, 3)
                 unit_price = random.randint(drug[1], drug[2])
+                if dept_id in high_price_depts and random.random() < 0.05:
+                    unit_price = int(unit_price * random.uniform(3, 5))
                 medications.append({
                     'med_id': f'MED{med_id:05d}',
                     'visit_id': visit['visit_id'],
@@ -196,18 +240,27 @@ def generate_medications(visits_df):
 
 
 def generate_waiting_times(registrations_df):
+    high_load_depts = {'D001', 'D010'}
     waiting_times = []
     for idx, reg in registrations_df.iterrows():
         reg_hour = int(reg['reg_time'].split(':')[0])
         reg_minute = int(reg['reg_time'].split(':')[1])
+        dept_id = reg['department_id']
+        is_peak_hour = 8 <= reg_hour <= 10
+        is_high_load = dept_id in high_load_depts
+        is_weekend = reg['is_weekend'] == 1
 
-        base_wait = 15
-        if 8 <= reg_hour <= 10:
-            base_wait = 30
-        elif 14 <= reg_hour <= 16:
-            base_wait = 25
-        elif reg_hour >= 17:
-            base_wait = 10
+        if is_high_load and is_peak_hour and not is_weekend:
+            base_wait = random.randint(60, 120)
+        elif is_high_load and not is_weekend:
+            base_wait = random.randint(20, 40)
+        elif is_high_load and is_weekend:
+            base_wait = random.randint(35, 55)
+        else:
+            base_wait = random.randint(10, 30)
+
+        if is_weekend and not is_high_load:
+            base_wait = base_wait + 15
 
         patient_type = reg['patient_type']
         if patient_type == '特需门诊':
@@ -217,10 +270,7 @@ def generate_waiting_times(registrations_df):
         elif patient_type == '急诊':
             base_wait = max(5, base_wait - 10)
 
-        if reg['is_weekend'] == 1:
-            base_wait = base_wait + 15
-
-        wait_minutes = max(5, int(np.random.normal(base_wait, 10)))
+        wait_minutes = max(5, int(np.random.normal(base_wait, 5)))
 
         arrival_time = f'{reg_hour:02d}:{reg_minute:02d}:00'
         call_minutes = reg_minute + wait_minutes
@@ -244,10 +294,29 @@ def generate_satisfaction(visits_df):
     survey_id = 1
     for _, visit in visits_df.iterrows():
         if random.random() < 0.8:
-            base_score = random.randint(3, 5)
-            overall_score = min(5, max(1, int(np.random.normal(base_score, 0.8))))
-            wait_score = min(5, max(1, int(np.random.normal(base_score - 0.5, 1))))
-            service_score = min(5, max(1, int(np.random.normal(base_score + 0.3, 0.7))))
+            wait_minutes = visit.get('wait_minutes', 20)
+            r = random.random()
+            
+            if r < 0.2:
+                overall_score = random.randint(1, 2)
+                wait_score = random.randint(1, 2)
+                service_score = random.randint(2, 3)
+                env_score = random.randint(2, 3)
+            elif wait_minutes > 60:
+                overall_score = random.randint(1, 2)
+                wait_score = random.randint(1, 2)
+                service_score = min(5, max(1, random.choice([2, 3, 3])))
+                env_score = min(5, max(1, random.choice([2, 3, 3])))
+            elif wait_minutes >= 30:
+                overall_score = random.randint(2, 3)
+                wait_score = random.randint(2, 3)
+                service_score = random.randint(2, 4)
+                env_score = random.randint(2, 4)
+            else:
+                overall_score = random.randint(4, 5)
+                wait_score = random.randint(4, 5)
+                service_score = random.randint(4, 5)
+                env_score = random.randint(4, 5)
 
             satisfaction.append({
                 'survey_id': f'SRV{survey_id:05d}',
@@ -255,7 +324,7 @@ def generate_satisfaction(visits_df):
                 'overall_score': overall_score,
                 'wait_score': wait_score,
                 'service_score': service_score,
-                'environment_score': min(5, max(1, int(np.random.normal(base_score, 0.6)))),
+                'environment_score': env_score,
                 'would_recommend': 1 if overall_score >= 4 else 0
             })
             survey_id += 1
@@ -275,7 +344,7 @@ def save_all_data(output_dir='data/demo'):
     doctors_df.to_csv(f'{output_dir}/doctors.csv', index=False, encoding='utf-8-sig')
     print(f'✓ 医生数据: {len(doctors_df)} 条')
 
-    registrations_df = generate_registrations(departments_df, doctors_df, 1200)
+    registrations_df = generate_registrations(departments_df, doctors_df, 1500)
     registrations_df.to_csv(f'{output_dir}/registrations.csv', index=False, encoding='utf-8-sig')
     print(f'✓ 挂号记录: {len(registrations_df)} 条')
 
@@ -295,11 +364,14 @@ def save_all_data(output_dir='data/demo'):
     waiting_times_df.to_csv(f'{output_dir}/waiting_times.csv', index=False, encoding='utf-8-sig')
     print(f'✓ 候诊时间: {len(waiting_times_df)} 条')
 
-    satisfaction_df = generate_satisfaction(visits_df)
+    wait_map = waiting_times_df[['reg_id', 'wait_minutes']]
+    visits_with_wait = visits_df.merge(wait_map, on='reg_id', how='left')
+    satisfaction_df = generate_satisfaction(visits_with_wait)
     satisfaction_df.to_csv(f'{output_dir}/satisfaction.csv', index=False, encoding='utf-8-sig')
     print(f'✓ 满意度调查: {len(satisfaction_df)} 条')
 
     print(f'\n演示数据已生成完成，保存至: {output_dir}/')
+    print(f'挂号记录总数: {len(registrations_df)} 条')
     print(f'就诊记录总数: {len(visits_df)} 条')
 
 

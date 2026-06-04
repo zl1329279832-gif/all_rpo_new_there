@@ -16,19 +16,49 @@ class DataValidator:
         'satisfaction': ['survey_id', 'visit_id', 'overall_score', 'wait_score', 'service_score']
     }
 
+    PRIMARY_KEYS = {
+        'departments': 'department_id',
+        'doctors': 'doctor_id',
+        'registrations': 'reg_id',
+        'visits': 'visit_id',
+        'examinations': 'exam_id',
+        'medications': 'med_id',
+        'waiting_times': 'wait_id',
+        'satisfaction': 'survey_id'
+    }
+
+    FILE_LABELS = {
+        'departments': '科室信息',
+        'doctors': '医生信息',
+        'registrations': '挂号记录',
+        'visits': '就诊记录',
+        'examinations': '检查项目',
+        'medications': '药品费用',
+        'waiting_times': '候诊时间',
+        'satisfaction': '患者满意度'
+    }
+
     def __init__(self, data: Dict[str, pd.DataFrame]):
         self.data = data
         self.validation_results = {}
         self.warnings = []
         self.errors = []
+        self._detailed_issues: List[Dict[str, Any]] = []
 
     def validate_all(self) -> Dict[str, Any]:
+        self._detailed_issues = []
         self.validation_results = {
             'field_validation': self._validate_fields(),
             'missing_values': self._check_missing_values(),
             'relationship_validation': self._validate_relationships(),
             'anomaly_detection': self._detect_anomalies(),
-            'data_types': self._validate_data_types()
+            'data_types': self._validate_data_types(),
+            'duplicate_records': self._detect_duplicates(),
+            'invalid_doctor_ids': self._detect_invalid_doctor_ids(),
+            'visit_reg_mismatch': self._detect_visit_reg_mismatch(),
+            'fee_anomalies': self._detect_fee_anomalies(),
+            'wait_time_anomalies': self._detect_wait_time_anomalies(),
+            'satisfaction_missing': self._detect_satisfaction_missing()
         }
         return self.validation_results
 
@@ -223,6 +253,302 @@ class DataValidator:
                             self.errors.append(f"{file_key}.{field} 日期格式不正确")
 
         return type_issues
+
+    def _detect_duplicates(self) -> Dict[str, List[Dict[str, Any]]]:
+        results = {}
+        for file_key, pk_field in self.PRIMARY_KEYS.items():
+            df = self.data.get(file_key)
+            if df is None or pk_field not in df.columns:
+                continue
+            duplicated = df[df.duplicated(subset=[pk_field], keep=False)]
+            if len(duplicated) == 0:
+                continue
+            dup_info = []
+            for pk_val, group in duplicated.groupby(pk_field):
+                for _, row in group.iterrows():
+                    row_number = int(row.name) + 2
+                    issue = {
+                        'file_key': file_key,
+                        'row_number': row_number,
+                        'field': pk_field,
+                        'issue_type': 'duplicate_record',
+                        'severity': 'error',
+                        'message': f"{self.FILE_LABELS.get(file_key, file_key)} 第{row_number}行 {pk_field} 存在重复值({pk_val})",
+                        'suggestion': '请检查数据来源，删除或修正重复记录'
+                    }
+                    dup_info.append(issue)
+                    self._detailed_issues.append(issue)
+            results[file_key] = dup_info
+            self.errors.append(f"{self.FILE_LABELS.get(file_key, file_key)}: 发现 {len(duplicated)} 条主键 {pk_field} 重复记录")
+        return results
+
+    def _detect_invalid_doctor_ids(self) -> Dict[str, List[Dict[str, Any]]]:
+        results = {}
+        doctors_df = self.data.get('doctors')
+        if doctors_df is None:
+            return results
+        valid_doctor_ids = set(doctors_df['doctor_id'].unique())
+
+        for file_key in ['registrations', 'visits']:
+            df = self.data.get(file_key)
+            if df is None or 'doctor_id' not in df.columns:
+                continue
+            invalid_mask = ~df['doctor_id'].isin(valid_doctor_ids)
+            invalid_rows = df[invalid_mask]
+            if len(invalid_rows) == 0:
+                continue
+            issues = []
+            for idx, row in invalid_rows.iterrows():
+                row_number = int(idx) + 2
+                issue = {
+                    'file_key': file_key,
+                    'row_number': row_number,
+                    'field': 'doctor_id',
+                    'issue_type': 'invalid_doctor_id',
+                    'severity': 'error',
+                    'message': f"{self.FILE_LABELS.get(file_key, file_key)} 第{row_number}行 doctor_id 医生编号({row['doctor_id']})在医生表中不存在",
+                    'suggestion': '请核实医生编号是否正确，或补充医生信息表中的对应记录'
+                }
+                issues.append(issue)
+                self._detailed_issues.append(issue)
+            results[file_key] = issues
+            self.errors.append(f"{self.FILE_LABELS.get(file_key, file_key)}: 发现 {len(invalid_rows)} 条医生编号无效记录")
+        return results
+
+    def _detect_visit_reg_mismatch(self) -> Dict[str, List[Dict[str, Any]]]:
+        results = {}
+        visits_df = self.data.get('visits')
+        registrations_df = self.data.get('registrations')
+        if visits_df is None or registrations_df is None:
+            return results
+
+        issues = []
+        reg_ids = set(registrations_df['reg_id'].unique())
+        reg_lookup = registrations_df.set_index('reg_id')
+
+        missing_reg_mask = ~visits_df['reg_id'].isin(reg_ids)
+        missing_reg_rows = visits_df[missing_reg_mask]
+        for idx, row in missing_reg_rows.iterrows():
+            row_number = int(idx) + 2
+            issue = {
+                'file_key': 'visits',
+                'row_number': row_number,
+                'field': 'reg_id',
+                'issue_type': 'visit_reg_not_found',
+                'severity': 'error',
+                'message': f"就诊记录 第{row_number}行 reg_id 挂号编号({row['reg_id']})在挂号记录中不存在",
+                'suggestion': '请核实挂号编号是否正确，或补充挂号记录'
+            }
+            issues.append(issue)
+            self._detailed_issues.append(issue)
+
+        if len(missing_reg_rows) > 0:
+            self.errors.append(f"就诊记录: 发现 {len(missing_reg_rows)} 条挂号编号不存在的记录")
+
+        matched_visits = visits_df[~missing_reg_mask]
+        for idx, row in matched_visits.iterrows():
+            row_number = int(idx) + 2
+            reg_row = reg_lookup.loc[row['reg_id']]
+            if isinstance(reg_row, pd.DataFrame):
+                reg_row = reg_row.iloc[0]
+
+            if 'doctor_id' in visits_df.columns and 'doctor_id' in registrations_df.columns:
+                if pd.notna(row.get('doctor_id')) and pd.notna(reg_row.get('doctor_id')):
+                    if str(row['doctor_id']) != str(reg_row['doctor_id']):
+                        issue = {
+                            'file_key': 'visits',
+                            'row_number': row_number,
+                            'field': 'doctor_id',
+                            'issue_type': 'visit_reg_doctor_mismatch',
+                            'severity': 'warning',
+                            'message': f"就诊记录 第{row_number}行 doctor_id 就诊医生({row['doctor_id']})与挂号医生({reg_row['doctor_id']})不一致",
+                            'suggestion': '请核实该就诊记录的医生信息，以挂号记录为准进行修正'
+                        }
+                        issues.append(issue)
+                        self._detailed_issues.append(issue)
+
+            if 'department_id' in visits_df.columns and 'department_id' in registrations_df.columns:
+                if pd.notna(row.get('department_id')) and pd.notna(reg_row.get('department_id')):
+                    if str(row['department_id']) != str(reg_row['department_id']):
+                        issue = {
+                            'file_key': 'visits',
+                            'row_number': row_number,
+                            'field': 'department_id',
+                            'issue_type': 'visit_reg_dept_mismatch',
+                            'severity': 'warning',
+                            'message': f"就诊记录 第{row_number}行 department_id 就诊科室({row['department_id']})与挂号科室({reg_row['department_id']})不一致",
+                            'suggestion': '请核实该就诊记录的科室信息，以挂号记录为准进行修正'
+                        }
+                        issues.append(issue)
+                        self._detailed_issues.append(issue)
+
+        mismatch_count = len(issues) - len(missing_reg_rows)
+        if mismatch_count > 0:
+            self.warnings.append(f"就诊记录: 发现 {mismatch_count} 条与挂号记录医生或科室不一致的记录")
+
+        results['visits'] = issues
+        return results
+
+    def _detect_fee_anomalies(self) -> Dict[str, List[Dict[str, Any]]]:
+        results = {}
+
+        exam_df = self.data.get('examinations')
+        if exam_df is not None and 'exam_fee' in exam_df.columns:
+            issues = []
+            invalid_mask = (exam_df['exam_fee'] <= 0) | (exam_df['exam_fee'] > 5000)
+            invalid_rows = exam_df[invalid_mask]
+            for idx, row in invalid_rows.iterrows():
+                row_number = int(idx) + 2
+                fee_val = row['exam_fee']
+                if fee_val <= 0:
+                    desc = f"检查费用({fee_val})小于等于0"
+                else:
+                    desc = f"检查费用({fee_val})超过5000"
+                issue = {
+                    'file_key': 'examinations',
+                    'row_number': row_number,
+                    'field': 'exam_fee',
+                    'issue_type': 'exam_fee_anomaly',
+                    'severity': 'error',
+                    'message': f"检查项目 第{row_number}行 exam_fee {desc}",
+                    'suggestion': '请核实检查费用是否正确，修正异常值'
+                }
+                issues.append(issue)
+                self._detailed_issues.append(issue)
+            if len(issues) > 0:
+                results['examinations'] = issues
+                self.errors.append(f"检查项目: 发现 {len(invalid_rows)} 条检查费用异常记录")
+
+        med_df = self.data.get('medications')
+        if med_df is not None and 'drug_fee' in med_df.columns:
+            issues = []
+            invalid_mask = (med_df['drug_fee'] <= 0) | (med_df['drug_fee'] > 3000)
+            invalid_rows = med_df[invalid_mask]
+            for idx, row in invalid_rows.iterrows():
+                row_number = int(idx) + 2
+                fee_val = row['drug_fee']
+                if fee_val <= 0:
+                    desc = f"药品费用({fee_val})小于等于0"
+                else:
+                    desc = f"药品费用({fee_val})超过3000"
+                issue = {
+                    'file_key': 'medications',
+                    'row_number': row_number,
+                    'field': 'drug_fee',
+                    'issue_type': 'drug_fee_anomaly',
+                    'severity': 'error',
+                    'message': f"药品费用 第{row_number}行 drug_fee {desc}",
+                    'suggestion': '请核实药品费用是否正确，修正异常值'
+                }
+                issues.append(issue)
+                self._detailed_issues.append(issue)
+            if len(issues) > 0:
+                results['medications'] = issues
+                self.errors.append(f"药品费用: 发现 {len(invalid_rows)} 条药品费用异常记录")
+
+        return results
+
+    def _detect_wait_time_anomalies(self) -> Dict[str, List[Dict[str, Any]]]:
+        results = {}
+        wt_df = self.data.get('waiting_times')
+        if wt_df is None or 'wait_minutes' not in wt_df.columns:
+            return results
+
+        issues = []
+        invalid_mask = (wt_df['wait_minutes'] < 0) | (wt_df['wait_minutes'] > 180)
+        invalid_rows = wt_df[invalid_mask]
+        for idx, row in invalid_rows.iterrows():
+            row_number = int(idx) + 2
+            wait_val = row['wait_minutes']
+            if wait_val < 0:
+                desc = f"候诊时间({wait_val})为负值"
+                suggestion = '请核实候诊时间数据，修正为合理的非负值'
+            else:
+                desc = f"候诊时间({wait_val})超过180分钟"
+                suggestion = '请核实候诊时间数据，排查是否存在排队系统异常'
+            issue = {
+                'file_key': 'waiting_times',
+                'row_number': row_number,
+                'field': 'wait_minutes',
+                'issue_type': 'wait_time_anomaly',
+                'severity': 'error' if wait_val < 0 else 'warning',
+                'message': f"候诊时间 第{row_number}行 wait_minutes {desc}",
+                'suggestion': suggestion
+            }
+            issues.append(issue)
+            self._detailed_issues.append(issue)
+
+        if len(issues) > 0:
+            results['waiting_times'] = issues
+            self.errors.append(f"候诊时间: 发现 {len(invalid_rows)} 条候诊时间异常记录")
+        return results
+
+    def _detect_satisfaction_missing(self) -> Dict[str, Any]:
+        results = {}
+        visits_df = self.data.get('visits')
+        satisfaction_df = self.data.get('satisfaction')
+        if visits_df is None:
+            return results
+
+        total_visits = len(visits_df)
+        if total_visits == 0:
+            return results
+
+        if satisfaction_df is None or 'visit_id' not in satisfaction_df.columns:
+            results = {
+                'total_visits': total_visits,
+                'visits_with_satisfaction': 0,
+                'visits_without_satisfaction': total_visits,
+                'missing_rate': 100.0,
+                'missing_visit_ids': list(visits_df['visit_id'].unique()[:100])
+            }
+            self._detailed_issues.append({
+                'file_key': 'visits',
+                'row_number': 0,
+                'field': 'visit_id',
+                'issue_type': 'satisfaction_missing',
+                'severity': 'warning',
+                'message': f"就诊记录 满意度数据缺失，所有{total_visits}条就诊记录均无对应满意度数据",
+                'suggestion': '请补充患者满意度调查数据'
+            })
+            self.warnings.append(f"满意度数据缺失: 所有{total_visits}条就诊记录均无对应满意度数据")
+            return results
+
+        sat_visit_ids = set(satisfaction_df['visit_id'].unique())
+        visits_without_sat = visits_df[~visits_df['visit_id'].isin(sat_visit_ids)]
+        missing_count = len(visits_without_sat)
+        missing_rate = round((missing_count / total_visits) * 100, 2)
+
+        results = {
+            'total_visits': total_visits,
+            'visits_with_satisfaction': total_visits - missing_count,
+            'visits_without_satisfaction': missing_count,
+            'missing_rate': missing_rate,
+            'missing_visit_ids': list(visits_without_sat['visit_id'].unique()[:100])
+        }
+
+        if missing_count > 0:
+            severity = 'warning'
+            if missing_rate > 50:
+                severity = 'error'
+            self._detailed_issues.append({
+                'file_key': 'visits',
+                'row_number': 0,
+                'field': 'visit_id',
+                'issue_type': 'satisfaction_missing',
+                'severity': severity,
+                'message': f"就诊记录 有{missing_count}条就诊记录缺少满意度数据(缺失率{missing_rate}%)",
+                'suggestion': '请补充缺失的满意度调查数据，提高数据完整性'
+            })
+            if severity == 'error':
+                self.errors.append(f"满意度缺失: {missing_count}条就诊记录缺少满意度数据(缺失率{missing_rate}%)")
+            else:
+                self.warnings.append(f"满意度缺失: {missing_count}条就诊记录缺少满意度数据(缺失率{missing_rate}%)")
+
+        return results
+
+    def get_detailed_issues(self) -> List[Dict[str, Any]]:
+        return self._detailed_issues
 
     def get_summary(self) -> Dict[str, Any]:
         return {
