@@ -64,6 +64,12 @@ def init_session_state():
         st.session_state.critical_nodes = None
     if "shortage_nodes" not in st.session_state:
         st.session_state.shortage_nodes = None
+    if "last_min_pressure" not in st.session_state:
+        st.session_state.last_min_pressure = None
+    if "last_leak_coeff" not in st.session_state:
+        st.session_state.last_leak_coeff = None
+    if "last_leak_exp" not in st.session_state:
+        st.session_state.last_leak_exp = None
 
 
 def render_sidebar():
@@ -111,11 +117,21 @@ def render_sidebar():
 
     st.sidebar.markdown("---")
     st.sidebar.header("参数调整")
-    min_pressure = st.sidebar.slider("最小供水压力 (m)", 5.0, 30.0, MIN_PRESSURE_M, 0.5)
-    leak_coeff = st.sidebar.slider("漏损系数", 1e-7, 1e-3, 1e-5, format="%.1e")
-    leak_exp = st.sidebar.slider("漏损压力指数", 0.3, 1.0, 0.5, 0.05)
+    min_pressure = st.sidebar.slider("最小供水压力 (m)", 5.0, 30.0, MIN_PRESSURE_M, 0.5, key="min_pressure_slider")
+    leak_coeff_options = [1e-7, 5e-7, 1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
+    leak_coeff_default_idx = leak_coeff_options.index(1e-5)
+    leak_coeff = st.sidebar.select_slider(
+        "漏损系数",
+        options=leak_coeff_options,
+        value=leak_coeff_options[leak_coeff_default_idx],
+        format_func=lambda x: f"{x:.1e}",
+        key="leak_coeff_slider",
+    )
+    leak_exp = st.sidebar.slider("漏损压力指数", 0.3, 1.0, 0.5, 0.05, key="leak_exp_slider")
 
-    return config, min_pressure, leak_coeff, leak_exp
+    auto_recompute = st.sidebar.checkbox("实时更新（参数变化时自动重新计算）", value=True, key="auto_recompute_checkbox")
+
+    return config, min_pressure, leak_coeff, leak_exp, auto_recompute
 
 
 def render_overview(config, result):
@@ -396,14 +412,32 @@ def main():
         st.info("请在左侧加载管网配置数据")
         return
 
-    config, min_pressure, leak_coeff, leak_exp = sidebar_result
+    config, min_pressure, leak_coeff, leak_exp, auto_recompute = sidebar_result
 
     if config is None:
         st.info("请在左侧加载管网配置数据")
         return
 
+    params_changed = False
+    if st.session_state.last_min_pressure is not None and st.session_state.last_min_pressure != min_pressure:
+        params_changed = True
+    if st.session_state.last_leak_coeff is not None and st.session_state.last_leak_coeff != leak_coeff:
+        params_changed = True
+    if st.session_state.last_leak_exp is not None and st.session_state.last_leak_exp != leak_exp:
+        params_changed = True
+
+    st.session_state.last_min_pressure = min_pressure
+    st.session_state.last_leak_coeff = leak_coeff
+    st.session_state.last_leak_exp = leak_exp
+
     if st.button("运行水力计算", type="primary"):
         with st.spinner("正在求解管网水力方程..."):
+            result = solve_network(config)
+            st.session_state.result = result
+            st.session_state.config = config
+
+    if auto_recompute and params_changed and st.session_state.result is not None:
+        with st.spinner("参数变化，正在重新计算..."):
             result = solve_network(config)
             st.session_state.result = result
             st.session_state.config = config
