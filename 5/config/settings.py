@@ -1,12 +1,22 @@
 import os
+import sys
 from pathlib import Path
 
-BASE_DIR = Path(__file__).parent.parent
+
+def get_base_dir() -> Path:
+    if getattr(sys, 'frozen', False):
+        return Path(sys.executable).parent
+    else:
+        return Path(__file__).parent.parent
+
+
+BASE_DIR = get_base_dir()
 
 APP_NAME = "实验室样品登记与检测系统"
 APP_VERSION = "2.0.0"
 
-DATABASE_PATH = BASE_DIR / "data" / "laboratory.db"
+DATA_DIR = BASE_DIR / "data"
+DATABASE_PATH = DATA_DIR / "laboratory.db"
 ATTACHMENT_DIR = BASE_DIR / "attachments"
 REPORT_DIR = BASE_DIR / "reports"
 BACKUP_DIR = BASE_DIR / "backups"
@@ -79,7 +89,7 @@ TESTERS = [
 
 def ensure_directories():
     for directory in [
-        BASE_DIR / "data",
+        DATA_DIR,
         ATTACHMENT_DIR,
         REPORT_DIR,
         BACKUP_DIR,

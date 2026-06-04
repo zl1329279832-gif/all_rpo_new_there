@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from typing import Dict, Any
+from typing import Dict, Any, List
 from utils.error_handler import ErrorHandler
 
 
@@ -138,9 +138,11 @@ class DataImportPage:
         st.subheader("✅ 数据校验结果")
 
         try:
-            validator = self.validator(st.session_state.data)
-            validation_results = validator.validate_all()
-            summary = validator.get_summary()
+            with st.spinner("正在加载数据，请稍候..."):
+                validator = self.validator(st.session_state.data)
+                validation_results = validator.validate_all()
+                summary = validator.get_summary()
+                detailed_issues = validator.get_detailed_issues()
 
             col1, col2 = st.columns(2)
             with col1:
@@ -157,6 +159,37 @@ class DataImportPage:
                 with st.expander("查看详细警告"):
                     for warning in summary['warnings']:
                         st.warning(f"⚠️ {warning}")
+
+            with st.expander("📋 详细问题清单", expanded=False):
+                if not detailed_issues:
+                    st.info("暂无详细校验问题")
+                else:
+                    error_issues = [issue for issue in detailed_issues if issue.get('severity') == 'error']
+                    warning_issues = [issue for issue in detailed_issues if issue.get('severity') == 'warning']
+
+                    if error_issues:
+                        st.markdown("### ❌ 错误问题")
+                        error_df = pd.DataFrame([{
+                            '文件': self.FILE_LABELS.get(issue.get('file_key'), issue.get('file_key')),
+                            '行号': issue.get('row_number', '-') if issue.get('row_number', 0) != 0 else '-',
+                            '字段': issue.get('field', '-'),
+                            '问题描述': issue.get('message', ''),
+                            '处理建议': issue.get('suggestion', '')
+                        } for issue in error_issues])
+                        st.dataframe(error_df.style.applymap(lambda x: 'background-color: #ffcccc', subset=['文件']),
+                                     use_container_width=True, hide_index=True)
+
+                    if warning_issues:
+                        st.markdown("### ⚠️ 警告问题")
+                        warning_df = pd.DataFrame([{
+                            '文件': self.FILE_LABELS.get(issue.get('file_key'), issue.get('file_key')),
+                            '行号': issue.get('row_number', '-') if issue.get('row_number', 0) != 0 else '-',
+                            '字段': issue.get('field', '-'),
+                            '问题描述': issue.get('message', ''),
+                            '处理建议': issue.get('suggestion', '')
+                        } for issue in warning_issues])
+                        st.dataframe(warning_df.style.applymap(lambda x: 'background-color: #fff2cc', subset=['文件']),
+                                     use_container_width=True, hide_index=True)
 
             if summary['is_valid']:
                 st.success("✅ 数据校验通过！")
