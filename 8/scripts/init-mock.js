@@ -1,0 +1,20 @@
+const fs = require('fs');
+const path = require('path');
+
+console.log('=== 初始化演示数据 ===');
+console.log('');
+console.log('测试账号：');
+console.log('  admin / 123456 - 超级管理员');
+console.log('  manager / 123456 - 运营经理');
+console.log('  operator / 123456 - 运营专员');
+console.log('  viewer / 123456 - 访客');
+console.log('');
+console.log('端口说明：');
+console.log('  Web: 5173');
+console.log('  BFF: 3000');
+console.log('  User Service: 3001');
+console.log('  Order Service: 3002');
+console.log('  Ticket Service: 3003');
+console.log('  Notification Service: 3004');
+console.log('');
+console.log('演示数据已就绪！');

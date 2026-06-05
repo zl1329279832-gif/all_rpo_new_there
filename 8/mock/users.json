@@ -1,0 +1,90 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "password": "123456",
+    "realName": "管理员",
+    "role": "admin",
+    "roleName": "超级管理员",
+    "department": "技术部",
+    "email": "admin@example.com",
+    "phone": "13800138000",
+    "avatar": "",
+    "status": 1,
+    "permissions": [
+      "*"
+    ]
+  },
+  {
+    "id": 2,
+    "username": "manager",
+    "password": "123456",
+    "realName": "张经理",
+    "role": "manager",
+    "roleName": "运营经理",
+    "department": "运营部",
+    "email": "manager@example.com",
+    "phone": "13800138001",
+    "avatar": "",
+    "status": 1,
+    "permissions": [
+      "user:view",
+      "user:create",
+      "user:update",
+      "order:view",
+      "order:create",
+      "order:update",
+      "ticket:view",
+      "ticket:create",
+      "ticket:update",
+      "message:view",
+      "message:send",
+      "log:view",
+      "log:export",
+      "dashboard:view"
+    ]
+  },
+  {
+    "id": 3,
+    "username": "operator",
+    "password": "123456",
+    "realName": "李专员",
+    "role": "operator",
+    "roleName": "运营专员",
+    "department": "运营部",
+    "email": "operator@example.com",
+    "phone": "13800138002",
+    "avatar": "",
+    "status": 1,
+    "permissions": [
+      "user:view",
+      "order:view",
+      "order:create",
+      "ticket:view",
+      "ticket:create",
+      "message:view",
+      "log:view",
+      "dashboard:view"
+    ]
+  },
+  {
+    "id": 4,
+    "username": "viewer",
+    "password": "123456",
+    "realName": "王访客",
+    "role": "viewer",
+    "roleName": "访客",
+    "department": "访客",
+    "email": "viewer@example.com",
+    "phone": "13800138003",
+    "avatar": "",
+    "status": 1,
+    "permissions": [
+      "user:view",
+      "order:view",
+      "ticket:view",
+      "message:view",
+      "dashboard:view"
+    ]
+  }
+]

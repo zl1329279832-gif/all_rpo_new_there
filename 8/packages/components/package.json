@@ -1,0 +1,10 @@
+{
+  "name": "@platform/components",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "peerDependencies": {
+    "vue": "^3.4.0",
+    "element-plus": "^2.4.4"
+  }
+}

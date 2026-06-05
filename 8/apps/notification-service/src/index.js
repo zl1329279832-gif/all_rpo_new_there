@@ -1,0 +1,34 @@
+const express = require('express');
+const cors = require('cors');
+const app = express();
+app.use(cors());
+app.use(express.json());
+const PORT = process.env.PORT || 3004;
+let data = [{"id":1,"title":"系统通知1","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":2,"title":"系统通知2","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":3,"title":"系统通知3","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":4,"title":"系统通知4","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":5,"title":"系统通知5","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":6,"title":"系统通知6","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":7,"title":"系统通知7","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":8,"title":"系统通知8","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":9,"title":"系统通知9","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":10,"title":"系统通知10","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":11,"title":"系统通知11","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":12,"title":"系统通知12","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":13,"title":"系统通知13","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":14,"title":"系统通知14","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":15,"title":"系统通知15","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":16,"title":"系统通知16","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":17,"title":"系统通知17","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":18,"title":"系统通知18","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":19,"title":"系统通知19","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":20,"title":"系统通知20","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":21,"title":"系统通知21","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":22,"title":"系统通知22","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":23,"title":"系统通知23","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":24,"title":"系统通知24","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":25,"title":"系统通知25","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":26,"title":"系统通知26","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":27,"title":"系统通知27","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":28,"title":"系统通知28","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":29,"title":"系统通知29","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":30,"title":"系统通知30","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":31,"title":"系统通知31","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":32,"title":"系统通知32","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":33,"title":"系统通知33","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":34,"title":"系统通知34","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":35,"title":"系统通知35","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":36,"title":"系统通知36","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":37,"title":"系统通知37","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":38,"title":"系统通知38","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":39,"title":"系统通知39","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":40,"title":"系统通知40","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":41,"title":"系统通知41","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":42,"title":"系统通知42","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":43,"title":"系统通知43","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":44,"title":"系统通知44","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":45,"title":"系统通知45","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":46,"title":"系统通知46","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":47,"title":"系统通知47","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":48,"title":"系统通知48","content":"这是一条系统通知内容...","type":0,"isRead":1,"createTime":"2024-01-01 10:00:00"},{"id":49,"title":"系统通知49","content":"这是一条系统通知内容...","type":1,"isRead":0,"createTime":"2024-01-01 10:00:00"},{"id":50,"title":"系统通知50","content":"这是一条系统通知内容...","type":2,"isRead":0,"createTime":"2024-01-01 10:00:00"}];
+app.get('/health', (req, res) => res.json({ status: 'ok', service: 'notification' }));
+app.get('/api/notifications', (req, res) => {
+  const page = parseInt(req.query.page || 1);
+  const pageSize = parseInt(req.query.pageSize || 10);
+  const start = (page - 1) * pageSize;
+  res.json({ code: 200, message: 'success', data: { list: data.slice(start, start + pageSize), total: data.length } });
+});
+app.get('/api/notifications/:id', (req, res) => {
+  const item = data.find(d => d.id === parseInt(req.params.id));
+  res.json({ code: 200, message: 'success', data: item });
+});
+app.post('/api/notifications', (req, res) => {
+  const newItem = { id: data.length + 1, ...req.body, createTime: new Date().toISOString() };
+  data.push(newItem);
+  res.json({ code: 200, message: 'success', data: newItem });
+});
+app.put('/api/notifications/:id', (req, res) => {
+  const idx = data.findIndex(d => d.id === parseInt(req.params.id));
+  if (idx > -1) data[idx] = { ...data[idx], ...req.body };
+  res.json({ code: 200, message: 'success', data: data[idx] });
+});
+app.delete('/api/notifications/:id', (req, res) => {
+  const idx = data.findIndex(d => d.id === parseInt(req.params.id));
+  if (idx > -1) data.splice(idx, 1);
+  res.json({ code: 200, message: 'success', data: null });
+});
+app.listen(PORT, () => console.log('notification service running on http://localhost:' + PORT));
