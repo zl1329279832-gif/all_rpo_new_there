@@ -270,7 +270,7 @@ const loadWarningData = async () => {
 const loadOverviewData = async () => {
   overviewLoading.value = true
   try {
-    const res = await batchApi.page({ ...overviewQuery, groupByProduct: true })
+    const res = await batchApi.overview(overviewQuery)
     overviewList.value = res.data.list || []
     overviewTotal.value = res.data.total || 0
   } finally {

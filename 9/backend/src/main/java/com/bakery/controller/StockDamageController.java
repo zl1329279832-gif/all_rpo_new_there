@@ -24,14 +24,15 @@ public class StockDamageController {
     @GetMapping("/page")
     public Result<IPage<StockDamage>> getDamagePage(@RequestParam(defaultValue = "1") Integer pageNum,
                                                @RequestParam(defaultValue = "10") Integer pageSize,
+                                               @RequestParam(required = false) String damageNo,
                                                @RequestParam(required = false) Integer damageType,
                                                @RequestParam(required = false) Integer status) {
-        return Result.success(stockDamageService.getDamagePage(pageNum, pageSize, damageType, status));
+        return Result.success(stockDamageService.getDamagePage(pageNum, pageSize, damageNo, damageType, status));
     }
 
     @ApiOperation("获取报损详情")
     @GetMapping("/{id}")
-    public Result<Map<String, Object>> getDamageDetail(@PathVariable Long id) {
+    public Result<StockDamage> getDamageDetail(@PathVariable Long id) {
         return Result.success(stockDamageService.getDamageDetail(id));
     }
 

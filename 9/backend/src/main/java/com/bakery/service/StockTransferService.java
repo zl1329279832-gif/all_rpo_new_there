@@ -6,9 +6,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bakery.common.BusinessException;
 import com.bakery.dto.StockTransferDTO;
+import com.bakery.entity.BaseRecipe;
 import com.bakery.entity.ProdBatch;
 import com.bakery.entity.StockTransfer;
 import com.bakery.entity.StockTransferDetail;
+import com.bakery.mapper.BaseRecipeMapper;
 import com.bakery.mapper.ProdBatchMapper;
 import com.bakery.mapper.StockTransferDetailMapper;
 import com.bakery.mapper.StockTransferMapper;
@@ -33,10 +35,35 @@ public class StockTransferService extends ServiceImpl<StockTransferMapper, Stock
     private ProdBatchMapper batchMapper;
     @Autowired
     private ProdBatchService batchService;
+    @Autowired
+    private BaseRecipeMapper recipeMapper;
 
-    public IPage<StockTransfer> getTransferPage(Integer pageNum, Integer pageSize, Integer transferType, Integer status) {
+    public IPage<StockTransfer> getTransferPage(Integer pageNum, Integer pageSize, String transferNo, Integer transferType, Integer status) {
         Page<StockTransfer> page = new Page<>(pageNum, pageSize);
-        return baseMapper.selectTransferPage(page, transferType, status);
+        IPage<StockTransfer> result = baseMapper.selectTransferPage(page, transferNo, transferType, status);
+        for (StockTransfer transfer : result.getRecords()) {
+            transfer.setTransferQty(transfer.getTotalQty());
+            List<StockTransferDetail> details = transferDetailMapper.selectByTransferId(transfer.getId());
+            if (details != null && !details.isEmpty()) {
+                StockTransferDetail detail = details.get(0);
+                transfer.setRecipeId(detail.getRecipeId());
+                ProdBatch batch = batchMapper.selectById(detail.getBatchId());
+                if (batch != null) {
+                    transfer.setOutboundBatchNo(batch.getBatchNo());
+                }
+                List<ProdBatch> inBatches = batchMapper.selectList(new LambdaQueryWrapper<ProdBatch>()
+                        .likeRight(ProdBatch::getRemark, "调拨入库，源批次:")
+                        .eq(ProdBatch::getStoreId, transfer.getInStoreId()));
+                if (inBatches != null && !inBatches.isEmpty()) {
+                    transfer.setInboundBatchNo(inBatches.get(0).getBatchNo());
+                }
+                BaseRecipe recipe = recipeMapper.selectById(detail.getRecipeId());
+                if (recipe != null) {
+                    transfer.setProductName(recipe.getProductName());
+                }
+            }
+        }
+        return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -137,13 +164,29 @@ public class StockTransferService extends ServiceImpl<StockTransferMapper, Stock
         updateById(transfer);
     }
 
-    public Map<String, Object> getTransferDetail(Long id) {
+    public StockTransfer getTransferDetail(Long id) {
         StockTransfer transfer = getById(id);
+        transfer.setTransferQty(transfer.getTotalQty());
         List<StockTransferDetail> details = transferDetailMapper.selectByTransferId(id);
-        Map<String, Object> result = new HashMap<>();
-        result.put("transfer", transfer);
-        result.put("details", details);
-        return result;
+        if (details != null && !details.isEmpty()) {
+            StockTransferDetail detail = details.get(0);
+            transfer.setRecipeId(detail.getRecipeId());
+            ProdBatch batch = batchMapper.selectById(detail.getBatchId());
+            if (batch != null) {
+                transfer.setOutboundBatchNo(batch.getBatchNo());
+            }
+            List<ProdBatch> inBatches = batchMapper.selectList(new LambdaQueryWrapper<ProdBatch>()
+                    .likeRight(ProdBatch::getRemark, "调拨入库，源批次:")
+                    .eq(ProdBatch::getStoreId, transfer.getInStoreId()));
+            if (inBatches != null && !inBatches.isEmpty()) {
+                transfer.setInboundBatchNo(inBatches.get(0).getBatchNo());
+            }
+            BaseRecipe recipe = recipeMapper.selectById(detail.getRecipeId());
+            if (recipe != null) {
+                transfer.setProductName(recipe.getProductName());
+            }
+        }
+        return transfer;
     }
 
     private String generateTransferNo() {

@@ -22,9 +22,14 @@ public class AnalysisController {
     @ApiOperation("获取经营分析数据")
     @GetMapping
     public Result<AnalysisVO> getAnalysisData(
+            @RequestParam(required = false) Integer days,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
             @RequestParam(required = false) Long storeId) {
+        if (days != null && startDate == null) {
+            startDate = LocalDate.now().minusDays(days);
+            endDate = LocalDate.now();
+        }
         return Result.success(analysisService.getAnalysisData(startDate, endDate, storeId));
     }
 

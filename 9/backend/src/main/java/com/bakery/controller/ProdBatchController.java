@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class ProdBatchController {
 
     @ApiOperation("获取批次详情")
     @GetMapping("/{id}")
-    public Result<Map<String, Object>> getBatchDetail(@PathVariable Long id) {
+    public Result<ProdBatch> getBatchDetail(@PathVariable Long id) {
         return Result.success(prodBatchService.getBatchDetail(id));
     }
 
@@ -58,9 +59,32 @@ public class ProdBatchController {
         return Result.success(prodBatchService.getWarningStats(storeId));
     }
 
-    @ApiOperation("获取临期预警列表")
+    @ApiOperation("获取临期预警列表（分页）")
     @GetMapping("/warning/list")
-    public Result<List<ProdBatch>> getWarningList(@RequestParam(defaultValue = "1") Long storeId) {
-        return Result.success(prodBatchService.getWarningList(storeId));
+    public Result<Map<String, Object>> getWarningList(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(defaultValue = "1") Long storeId,
+            @RequestParam(required = false) String productName,
+            @RequestParam(required = false) String warningLevel) {
+        IPage<ProdBatch> page = prodBatchService.getWarningPage(pageNum, pageSize, storeId, productName, warningLevel);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", page.getRecords());
+        result.put("total", page.getTotal());
+        return Result.success(result);
+    }
+
+    @ApiOperation("库存效期总览（按产品分组）")
+    @GetMapping("/overview")
+    public Result<Map<String, Object>> getProductOverview(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(defaultValue = "1") Long storeId,
+            @RequestParam(required = false) String productName) {
+        IPage<Map<String, Object>> page = prodBatchService.getProductOverview(pageNum, pageSize, storeId, productName);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", page.getRecords());
+        result.put("total", page.getTotal());
+        return Result.success(result);
     }
 }

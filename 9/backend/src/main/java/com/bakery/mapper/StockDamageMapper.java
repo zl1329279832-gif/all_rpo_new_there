@@ -16,11 +16,13 @@ public interface StockDamageMapper extends BaseMapper<StockDamage> {
             "FROM stock_damage d " +
             "LEFT JOIN sys_store s ON d.store_id = s.id " +
             "WHERE 1=1 " +
+            "<if test='damageNo != null'>AND d.damage_no LIKE CONCAT('%', #{damageNo}, '%')</if>" +
             "<if test='damageType != null'>AND d.damage_type = #{damageType}</if>" +
             "<if test='status != null'>AND d.status = #{status}</if>" +
             "ORDER BY d.create_time DESC" +
             "</script>")
     IPage<StockDamage> selectDamagePage(Page<StockDamage> page,
+                                        @Param("damageNo") String damageNo,
                                         @Param("damageType") Integer damageType,
                                         @Param("status") Integer status);
 }

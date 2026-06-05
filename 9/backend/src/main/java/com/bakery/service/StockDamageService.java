@@ -6,8 +6,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.bakery.common.BusinessException;
 import com.bakery.dto.StockDamageDTO;
+import com.bakery.entity.BaseRecipe;
+import com.bakery.entity.ProdBatch;
 import com.bakery.entity.StockDamage;
 import com.bakery.entity.StockDamageDetail;
+import com.bakery.mapper.BaseRecipeMapper;
+import com.bakery.mapper.ProdBatchMapper;
 import com.bakery.mapper.StockDamageDetailMapper;
 import com.bakery.mapper.StockDamageMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class StockDamageService extends ServiceImpl<StockDamageMapper, StockDamage> {
@@ -29,10 +31,32 @@ public class StockDamageService extends ServiceImpl<StockDamageMapper, StockDama
     private StockDamageDetailMapper damageDetailMapper;
     @Autowired
     private ProdBatchService batchService;
+    @Autowired
+    private ProdBatchMapper batchMapper;
+    @Autowired
+    private BaseRecipeMapper recipeMapper;
 
-    public IPage<StockDamage> getDamagePage(Integer pageNum, Integer pageSize, Integer damageType, Integer status) {
+    public IPage<StockDamage> getDamagePage(Integer pageNum, Integer pageSize, String damageNo, Integer damageType, Integer status) {
         Page<StockDamage> page = new Page<>(pageNum, pageSize);
-        return baseMapper.selectDamagePage(page, damageType, status);
+        IPage<StockDamage> result = baseMapper.selectDamagePage(page, damageNo, damageType, status);
+        for (StockDamage damage : result.getRecords()) {
+            damage.setDamageQty(damage.getTotalQty());
+            damage.setDamageAmount(damage.getTotalAmount());
+            List<StockDamageDetail> details = damageDetailMapper.selectByDamageId(damage.getId());
+            if (details != null && !details.isEmpty()) {
+                StockDamageDetail detail = details.get(0);
+                damage.setBatchId(detail.getBatchId());
+                ProdBatch batch = batchMapper.selectById(detail.getBatchId());
+                if (batch != null) {
+                    damage.setBatchNo(batch.getBatchNo());
+                }
+                BaseRecipe recipe = recipeMapper.selectById(detail.getRecipeId());
+                if (recipe != null) {
+                    damage.setProductName(recipe.getProductName());
+                }
+            }
+        }
+        return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -99,13 +123,24 @@ public class StockDamageService extends ServiceImpl<StockDamageMapper, StockDama
         updateById(damage);
     }
 
-    public Map<String, Object> getDamageDetail(Long id) {
+    public StockDamage getDamageDetail(Long id) {
         StockDamage damage = getById(id);
+        damage.setDamageQty(damage.getTotalQty());
+        damage.setDamageAmount(damage.getTotalAmount());
         List<StockDamageDetail> details = damageDetailMapper.selectByDamageId(id);
-        Map<String, Object> result = new HashMap<>();
-        result.put("damage", damage);
-        result.put("details", details);
-        return result;
+        if (details != null && !details.isEmpty()) {
+            StockDamageDetail detail = details.get(0);
+            damage.setBatchId(detail.getBatchId());
+            ProdBatch batch = batchMapper.selectById(detail.getBatchId());
+            if (batch != null) {
+                damage.setBatchNo(batch.getBatchNo());
+            }
+            BaseRecipe recipe = recipeMapper.selectById(detail.getRecipeId());
+            if (recipe != null) {
+                damage.setProductName(recipe.getProductName());
+            }
+        }
+        return damage;
     }
 
     private String generateDamageNo() {

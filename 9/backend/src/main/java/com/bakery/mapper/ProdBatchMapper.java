@@ -25,9 +25,9 @@ public interface ProdBatchMapper extends BaseMapper<ProdBatch> {
             "<if test='recipeId != null'>AND b.recipe_id = #{recipeId}</if>" +
             "<if test='storeId != null'>AND b.store_id = #{storeId}</if>" +
             "<if test='batchNo != null'>AND b.batch_no LIKE CONCAT('%', #{batchNo}, '%')</if>" +
-            "<if test='warningType != null and warningType == 1'>AND b.expire_time &lt; NOW()</if>" +
-            "<if test='warningType != null and warningType == 2'>AND b.expire_time &gt; NOW() AND b.expire_time &lt; DATE_ADD(NOW(), INTERVAL r.warning_hours HOUR)</if>" +
-            "<if test='warningType != null and warningType == 3'>AND b.expire_time &gt;= DATE_ADD(NOW(), INTERVAL r.warning_hours HOUR)</if>" +
+            "<if test='warningType != null and warningType == 1'>AND b.expire_time <![CDATA[<]]> NOW()</if>" +
+            "<if test='warningType != null and warningType == 2'>AND b.expire_time <![CDATA[>]]> NOW() AND b.expire_time <![CDATA[<]]> DATE_ADD(NOW(), INTERVAL r.warning_hours HOUR)</if>" +
+            "<if test='warningType != null and warningType == 3'>AND b.expire_time <![CDATA[>=]]> DATE_ADD(NOW(), INTERVAL r.warning_hours HOUR)</if>" +
             "AND b.status IN (1,2) " +
             "ORDER BY b.expire_time ASC, b.produce_time DESC" +
             "</script>")
@@ -48,9 +48,7 @@ public interface ProdBatchMapper extends BaseMapper<ProdBatch> {
     @Update("UPDATE prod_batch SET status = #{status} WHERE id = #{id}")
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
 
-    @Select("SELECT COALESCE(b.produce_qty - COALESCE(SUM(CASE WHEN s.biz_type = 'TRANSFER_OUT' THEN s.qty_change ELSE 0 END), 0) - " +
-            "COALESCE(SUM(CASE WHEN s.biz_type = 'DAMAGE' THEN s.qty_change ELSE 0 END), 0) - " +
-            "COALESCE(SUM(CASE WHEN s.biz_type = 'SALE' THEN s.qty_change ELSE 0 END), 0), 0) " +
+    @Select("SELECT COALESCE(b.produce_qty + COALESCE(SUM(s.qty_change), 0), 0) " +
             "FROM prod_batch b " +
             "LEFT JOIN stock_log s ON s.batch_id = b.id AND s.biz_type IN ('TRANSFER_OUT','DAMAGE','SALE') " +
             "WHERE b.id = #{batchId}")
@@ -59,10 +57,10 @@ public interface ProdBatchMapper extends BaseMapper<ProdBatch> {
     @Select("SELECT COUNT(*) FROM prod_batch b " +
             "LEFT JOIN base_recipe r ON b.recipe_id = r.id " +
             "WHERE b.status IN (1,2) AND b.store_id = #{storeId} " +
-            "AND b.expire_time > NOW() AND b.expire_time &lt; DATE_ADD(NOW(), INTERVAL r.warning_hours HOUR)")
+            "AND b.expire_time > NOW() AND b.expire_time <![CDATA[<]]> DATE_ADD(NOW(), INTERVAL r.warning_hours HOUR)")
     Integer countExpiring(@Param("storeId") Long storeId);
 
-    @Select("SELECT COUNT(*) FROM prod_batch b WHERE b.status IN (1,2) AND b.store_id = #{storeId} AND b.expire_time &lt; NOW()")
+    @Select("SELECT COUNT(*) FROM prod_batch b WHERE b.status IN (1,2) AND b.store_id = #{storeId} AND b.expire_time <![CDATA[<]]> NOW()")
     Integer countExpired(@Param("storeId") Long storeId);
 
     @Select("<script>" +
@@ -70,7 +68,7 @@ public interface ProdBatchMapper extends BaseMapper<ProdBatch> {
             "FROM prod_batch b " +
             "LEFT JOIN base_recipe r ON b.recipe_id = r.id " +
             "WHERE b.status IN (1,2) AND b.store_id = #{storeId} " +
-            "AND b.expire_time &gt; NOW() AND b.expire_time &lt; DATE_ADD(NOW(), INTERVAL r.warning_hours HOUR) " +
+            "AND b.expire_time > NOW() AND b.expire_time <![CDATA[<]]> DATE_ADD(NOW(), INTERVAL r.warning_hours HOUR) " +
             "ORDER BY b.expire_time ASC" +
             "</script>")
     List<ProdBatch> selectWarningList(@Param("storeId") Long storeId);

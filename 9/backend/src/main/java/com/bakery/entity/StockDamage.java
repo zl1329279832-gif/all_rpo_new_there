@@ -1,6 +1,7 @@
 package com.bakery.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -18,9 +19,15 @@ public class StockDamage {
 
     private Long storeId;
 
+    private Long batchId;
+
     private Integer damageType;
 
     private Integer status;
+
+    private BigDecimal damageQty;
+
+    private BigDecimal damageAmount;
 
     private BigDecimal totalQty;
 
@@ -37,4 +44,16 @@ public class StockDamage {
     private LocalDateTime auditTime;
 
     private LocalDateTime updateTime;
+
+    @TableField(exist = false)
+    private String storeName;
+
+    @TableField(exist = false)
+    private String productName;
+
+    @TableField(exist = false)
+    private String batchNo;
+
+    @TableField(exist = false)
+    private String auditRemark;
 }

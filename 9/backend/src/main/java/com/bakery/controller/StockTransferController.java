@@ -24,14 +24,15 @@ public class StockTransferController {
     @GetMapping("/page")
     public Result<IPage<StockTransfer>> getTransferPage(@RequestParam(defaultValue = "1") Integer pageNum,
                                                     @RequestParam(defaultValue = "10") Integer pageSize,
+                                                    @RequestParam(required = false) String transferNo,
                                                     @RequestParam(required = false) Integer transferType,
                                                     @RequestParam(required = false) Integer status) {
-        return Result.success(stockTransferService.getTransferPage(pageNum, pageSize, transferType, status));
+        return Result.success(stockTransferService.getTransferPage(pageNum, pageSize, transferNo, transferType, status));
     }
 
     @ApiOperation("获取调拨详情")
     @GetMapping("/{id}")
-    public Result<Map<String, Object>> getTransferDetail(@PathVariable Long id) {
+    public Result<StockTransfer> getTransferDetail(@PathVariable Long id) {
         return Result.success(stockTransferService.getTransferDetail(id));
     }
 

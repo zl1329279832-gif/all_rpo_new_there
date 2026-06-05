@@ -7,12 +7,13 @@ import java.util.List;
 @Data
 public class AnalysisVO {
 
-    private BigDecimal totalSalesAmount;
-    private BigDecimal totalCostAmount;
-    private BigDecimal totalProfit;
-    private BigDecimal totalSalesQty;
-    private BigDecimal totalDamageAmount;
+    private BigDecimal salesAmount;
+    private BigDecimal costAmount;
+    private BigDecimal profit;
+    private BigDecimal salesQty;
+    private BigDecimal damageAmount;
     private BigDecimal damageRate;
+    private BigDecimal stockAmount;
 
     private List<SalesTrendVO> salesTrend;
     private List<CategorySalesVO> categorySales;
@@ -20,6 +21,14 @@ public class AnalysisVO {
     private List<ProductRankVO> productRank;
     private List<DamageTrendVO> damageTrend;
     private WarningStatsVO warningStats;
+    private List<WarningByProductVO> warningByProduct;
+
+    @Data
+    public static class WarningByProductVO {
+        private String productName;
+        private BigDecimal warningQty;
+        private BigDecimal expiredQty;
+    }
 
     @Data
     public static class SalesTrendVO {
@@ -60,11 +69,12 @@ public class AnalysisVO {
 
     @Data
     public static class WarningStatsVO {
-        private Integer expiringCount;
-        private BigDecimal expiringQty;
-        private Integer expiredCount;
+        private Integer totalBatches;
+        private Integer warningBatches;
+        private Integer expiredBatches;
+        private BigDecimal totalRemainQty;
+        private BigDecimal warningQty;
         private BigDecimal expiredQty;
-        private Integer normalCount;
-        private BigDecimal normalQty;
+        private Integer warningProducts;
     }
 }

@@ -16,7 +16,8 @@ export const batchApi = {
   available: (params) => request.get('/prod-batch/available', { params }),
   remain: (batchId) => request.get(`/prod-batch/remain/${batchId}`),
   warningStats: (params) => request.get('/prod-batch/warning/stats', { params }),
-  warningList: (params) => request.get('/prod-batch/warning/list', { params })
+  warningList: (params) => request.get('/prod-batch/warning/list', { params }),
+  overview: (params) => request.get('/prod-batch/overview', { params })
 }
 
 export const transferApi = {

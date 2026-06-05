@@ -45,11 +45,15 @@ public class AnalysisService {
         BigDecimal totalSalesQty = salesStatMapper.getTotalSalesQty(startDate, endDate);
         BigDecimal totalDamageAmount = salesStatMapper.getTotalDamageAmount(startDate, endDate);
 
-        vo.setTotalSalesAmount(totalSalesAmount);
-        vo.setTotalCostAmount(totalCostAmount);
-        vo.setTotalProfit(totalSalesAmount.subtract(totalCostAmount));
-        vo.setTotalSalesQty(totalSalesQty);
-        vo.setTotalDamageAmount(totalDamageAmount);
+        vo.setSalesAmount(totalSalesAmount);
+        vo.setCostAmount(totalCostAmount);
+        vo.setProfit(totalSalesAmount.subtract(totalCostAmount));
+        vo.setSalesQty(totalSalesQty);
+        vo.setDamageAmount(totalDamageAmount);
+        
+        AnalysisVO.WarningStatsVO warningStats = batchService.getWarningStats(storeId != null ? storeId : 1L);
+        vo.setStockAmount(warningStats.getTotalRemainQty().multiply(new BigDecimal("20")));
+        vo.setWarningStats(warningStats);
 
         if (totalSalesAmount.compareTo(BigDecimal.ZERO) > 0) {
             vo.setDamageRate(totalDamageAmount.divide(totalSalesAmount.add(totalDamageAmount), 4, RoundingMode.HALF_UP)
@@ -75,7 +79,9 @@ public class AnalysisService {
         vo.setStoreSales(salesStatMapper.getStoreSales(startDate, endDate));
         vo.setProductRank(salesStatMapper.getProductRank(startDate, endDate));
         vo.setDamageTrend(salesStatMapper.getDamageTrend(startDate, endDate));
-        vo.setWarningStats(batchService.getWarningStats(storeId != null ? storeId : 1L));
+
+        List<AnalysisVO.WarningByProductVO> warningByProduct = batchService.getWarningByProduct(storeId != null ? storeId : 1L);
+        vo.setWarningByProduct(warningByProduct);
 
         redisTemplate.opsForValue().set(cacheKey, vo, 30, TimeUnit.MINUTES);
         return vo;
