@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Api(tags = "门店调拨管理")
@@ -22,12 +23,16 @@ public class StockTransferController {
 
     @ApiOperation("获取调拨列表")
     @GetMapping("/page")
-    public Result<IPage<StockTransfer>> getTransferPage(@RequestParam(defaultValue = "1") Integer pageNum,
+    public Result<Map<String, Object>> getTransferPage(@RequestParam(defaultValue = "1") Integer pageNum,
                                                     @RequestParam(defaultValue = "10") Integer pageSize,
                                                     @RequestParam(required = false) String transferNo,
                                                     @RequestParam(required = false) Integer transferType,
                                                     @RequestParam(required = false) Integer status) {
-        return Result.success(stockTransferService.getTransferPage(pageNum, pageSize, transferNo, transferType, status));
+        IPage<StockTransfer> page = stockTransferService.getTransferPage(pageNum, pageSize, transferNo, transferType, status);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", page.getRecords());
+        result.put("total", page.getTotal());
+        return Result.success(result);
     }
 
     @ApiOperation("获取调拨详情")

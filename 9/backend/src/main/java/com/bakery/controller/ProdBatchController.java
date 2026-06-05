@@ -25,13 +25,34 @@ public class ProdBatchController {
 
     @ApiOperation("获取批次列表")
     @GetMapping("/page")
-    public Result<IPage<ProdBatch>> getBatchPage(@RequestParam(defaultValue = "1") Integer pageNum,
+    public Result<Map<String, Object>> getBatchPage(@RequestParam(defaultValue = "1") Integer pageNum,
                                                @RequestParam(defaultValue = "10") Integer pageSize,
                                                @RequestParam(required = false) Long recipeId,
                                                @RequestParam(required = false) Long storeId,
                                                @RequestParam(required = false) String batchNo,
-                                               @RequestParam(required = false) Integer warningType) {
-        return Result.success(prodBatchService.getBatchPage(pageNum, pageSize, recipeId, storeId, batchNo, warningType));
+                                               @RequestParam(required = false) String productName,
+                                               @RequestParam(required = false) Integer status,
+                                               @RequestParam(required = false) String warningStatus) {
+        Integer warningType = null;
+        if ("expired".equals(warningStatus)) {
+            warningType = 1;
+        } else if ("expiring".equals(warningStatus)) {
+            warningType = 2;
+        } else if ("normal".equals(warningStatus)) {
+            warningType = 3;
+        }
+        IPage<ProdBatch> page = prodBatchService.getBatchPage(pageNum, pageSize, recipeId, storeId, batchNo, warningType);
+        List<ProdBatch> records = page.getRecords();
+        if (productName != null && !productName.isEmpty()) {
+            records = records.stream().filter(b -> b.getProductName() != null && b.getProductName().contains(productName)).collect(java.util.stream.Collectors.toList());
+        }
+        if (status != null) {
+            records = records.stream().filter(b -> status.equals(b.getStatus())).collect(java.util.stream.Collectors.toList());
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", records);
+        result.put("total", records.size());
+        return Result.success(result);
     }
 
     @ApiOperation("获取批次详情")

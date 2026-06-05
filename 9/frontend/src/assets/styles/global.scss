@@ -157,3 +157,17 @@ body,
   justify-content: flex-end;
   margin-top: 20px;
 }
+
+.el-table {
+  width: 100% !important;
+}
+
+.el-tabs,
+.el-tab-pane {
+  width: 100%;
+}
+
+.el-table .el-table__body-wrapper,
+.el-table .el-table__header-wrapper {
+  width: 100%;
+}

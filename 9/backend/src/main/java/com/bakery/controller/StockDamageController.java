@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Api(tags = "报损管理")
@@ -22,12 +23,16 @@ public class StockDamageController {
 
     @ApiOperation("获取报损列表")
     @GetMapping("/page")
-    public Result<IPage<StockDamage>> getDamagePage(@RequestParam(defaultValue = "1") Integer pageNum,
+    public Result<Map<String, Object>> getDamagePage(@RequestParam(defaultValue = "1") Integer pageNum,
                                                @RequestParam(defaultValue = "10") Integer pageSize,
                                                @RequestParam(required = false) String damageNo,
                                                @RequestParam(required = false) Integer damageType,
                                                @RequestParam(required = false) Integer status) {
-        return Result.success(stockDamageService.getDamagePage(pageNum, pageSize, damageNo, damageType, status));
+        IPage<StockDamage> page = stockDamageService.getDamagePage(pageNum, pageSize, damageNo, damageType, status);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", page.getRecords());
+        result.put("total", page.getTotal());
+        return Result.success(result);
     }
 
     @ApiOperation("获取报损详情")

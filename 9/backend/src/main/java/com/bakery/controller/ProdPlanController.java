@@ -13,6 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 
 @Api(tags = "生产计划管理")
@@ -25,11 +26,15 @@ public class ProdPlanController {
 
     @ApiOperation("获取生产计划列表")
     @GetMapping("/page")
-    public Result<IPage<ProdPlan>> getPlanPage(@RequestParam(defaultValue = "1") Integer pageNum,
+    public Result<Map<String, Object>> getPlanPage(@RequestParam(defaultValue = "1") Integer pageNum,
                                              @RequestParam(defaultValue = "10") Integer pageSize,
                                              @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate planDate,
                                              @RequestParam(required = false) Integer status) {
-        return Result.success(prodPlanService.getPlanPage(pageNum, pageSize, planDate, status));
+        IPage<ProdPlan> page = prodPlanService.getPlanPage(pageNum, pageSize, planDate, status);
+        Map<String, Object> result = new HashMap<>();
+        result.put("list", page.getRecords());
+        result.put("total", page.getTotal());
+        return Result.success(result);
     }
 
     @ApiOperation("获取生产计划详情")
